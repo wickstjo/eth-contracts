@@ -1,6 +1,6 @@
 pragma solidity ^0.5.0;
 
-contract Token {
+contract TokenManager {
 
     // INIT STATUS & TASK MANAGER LOCATION
     bool public initialized = false;

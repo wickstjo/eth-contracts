@@ -1,33 +1,26 @@
 pragma solidity ^0.5.0;
 
 // IMPORT HELPER CONTRACT INTERFACES
-import { Devices } from './Devices.sol';
-import { Users } from './Users.sol';
-import { Tasks } from './Tasks.sol';
+import { TaskManager } from './Manager.sol';
 
 contract Task {
 
-    // BUYER & SELLER
+    // TASK BUYER & SELLER
     address payable public buyer;
     address payable public seller;
+
+    // LOCKED STATUS
+    bool public locked = false;
 
     // TASK PARAMS
     string public name;
     uint public reputation;
     string public encryption;
     uint public reward;
-    bool public locked;
 
-    // TASK INDEX
-    uint position;
-
-    // HELPER CONTRACTS
-    Devices public devices;
-    Users public users;
-    Tasks public tasks;
-
-    // SELF DESTRUCT EVENT
-    event Boom();
+    // TASK MANAGER REFERENCE & LISTED INDEX
+    TaskManager public task_manager;
+    uint public position;
 
     // WHEN THE CONTRACT IS CREATED
     constructor(
@@ -35,60 +28,51 @@ contract Task {
         string memory _name,
         uint _reputation,
         string memory _encryption,
-        uint _position,
-        Devices _devices,
-        Users _users
+        uint _position
     ) public payable {
 
-        // SET PARAMS
+        // SET TASK OWNER
+        buyer = _buyer;
+
+        // SET STATIC TASK PARAMS
         name = _name;
         reputation = _reputation;
         encryption = _encryption;
-        position = _position;
-
-        buyer = _buyer;
-        locked = false;
         reward = msg.value;
 
-        // SET CONTRACTS
-        devices = _devices;
-        users = _users;
-        tasks = Tasks(msg.sender);
-    }
-
-    // FETCH TASK DETAILS
-    function details() public view returns (string memory, uint, uint, string memory, bool) {
-        return (
-            name,
-            reputation,
-            reward,
-            encryption,
-            locked
-        );
+        // SET TASK MANAGER REFERENCE & LISTED INDEX
+        task_manager = TaskManager(msg.sender);
+        position = _position;
     }
 
     // ACCEPT TASK
     function accept(string memory id) public payable {
 
-        // CHECK LOCKED STATUS & FUNDS
-        require(!locked, 'the contract is locked');
+        // CONTRACT REFERENCES
+        address user_manager = task_manager.user_manager;
+        address device_manager = task_manager.device_manager;
+
+        // IF THE TASK IS NOT LOCKED
+        // IF TRANSACTION VALUE IS HALF OF REWARD
+        // IF THE USER IS REGISTERED
+        // IF THE USERS REPUTATION IS EQUAL OR HIGHER THAN THE REQUIREMENT
+        // IF THE PERFORMING DEVICE IS REGISTERED
+        // IF THE DEVICE IS OWNED BY THE USER
+        // IF THE DEVICE IS ACTIVE
+        require(!locked, 'task is locked');
         require(msg.value >= reward / 2, 'insufficient funds given');
+        require(user_manager.exists(msg.sender), 'you are not a registered user');
+        require(user_manager.fetch(msg.sender).reputation() >= reputation, 'not enough reputation');
+        require(device_manager.exists(id), 'the device is not registered');
+        require(device_manager.fetch(id).owner() == msg.sender, 'you are not the device owner');
+        require(device_manager.fetch(id).status(), 'device is not active');
 
-        // CHECK REGISTERATION STATUS
-        require(users.exists(msg.sender), 'you are not a registered user');
-        require(devices.exists(id), 'the device is not registered');
-
-        // DEVICE CONDITIONS
-        require(devices.fetch(id).status(), 'device is not active');
-        require(devices.fetch(id).owner() == msg.sender, 'you are not the device owner');
-        require(users.fetch(msg.sender).reputation() >= reputation, 'not enough reputation');
-
-        // SET SELLER & LOCK THE CONTRACT
+        // SET SELLER & LOCK THE TASK
         seller = msg.sender;
         locked = true;
 
-        // SEND ALERT
-        devices.fetch(id).assign(address(this), msg.sender);
+        // ASSIGN TASK TO THE DEVICE
+        device_manager.fetch(id).assign(msg.sender);
     }
 
     // SUBMIT DATA
@@ -102,7 +86,6 @@ contract Task {
 
         // REMOVE TASK, SEND EVENT & SELF DESTRUCT
         tasks.remove(position);
-        emit Boom();
         selfdestruct(seller);
     }
 
@@ -115,7 +98,6 @@ contract Task {
 
         // REMOVE TASK, SEND EVENT & SELF DESTRUCT
         tasks.remove(position);
-        emit Boom();
         selfdestruct(buyer);
     }
 }

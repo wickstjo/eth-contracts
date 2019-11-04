@@ -2,56 +2,39 @@ pragma solidity ^0.5.0;
 
 // IMPORT INTERFACES
 import { Task } from './Task.sol';
-import { Devices } from './Devices.sol';
-import { Users } from './Users.sol';
-import { Token } from './Token.sol';
+import { UserManager } from '../user/Manager.sol';
+import { DeviceManager } from '../device/Manager.sol';
+import { TokenManager } from '../Token.sol';
 
-contract Tasks {
+contract TaskManager {
 
-    // ALL TASKS & USER HISTORY
+    // OPEN TASKS
     Task[] public tasks;
 
     // INIT STATUS
     bool public initialized = false;
 
-    // APP CONTRACTS
-    Devices devices;
-    Users users;
-    Token token;
+    // REFERENCES
+    UserManager user_manager;
+    DeviceManager device_manager;
+    TokenManager token_manager;
 
-    // TASK ADDED EVENT
-    event Update (Task[] tasks);
+    // ADD TASK
+    function add(
+        string memory name,
+        uint reputation,
+        string memory encryption
+    ) public payable {
 
-    // INITIALIZE HELPER CONTRACTS
-    function init(Devices _devices, Users _users, Token _token) public {
-
-        // CONDITION
-        require(!initialized, 'contract has already been initialized');
-
-        // SET REFERENCES
-        devices = _devices;
-        users = _users;
-        token = _token;
-
-        // CONFIRM INITIALIZATION
-        initialized = true;
-    }
-
-    // FETCH ALL OPEN TASKS
-    function fetch() public view returns(Task[] memory) {
-        return tasks;
-    }
-
-    // ADD TASK ENTRY
-    function add(string memory name, uint reputation, string memory encryption) public payable {
-
-        // CONDITIONS
+        // IF CONTRACT HAS BEEN INITIALIZED
+        // SENDER IS A REGISTERED USER
+        // USER HAS ENOUGH TOKENS
         require(initialized, 'contracts have not been initialized');
-        require(users.exists(msg.sender), 'you are not a registered user');
-        require(token.balance(msg.sender) >= 1, 'you do not have the tokens to do this');
+        require(user_manager.exists(msg.sender), 'you are not a registered user');
+        require(token_manager.balance(msg.sender) >= 1, 'you do not have the tokens to do this');
 
         // REMOVE A TOKEN FROM SENDER
-        token.remove(1, msg.sender);
+        token_manager.remove(1, msg.sender);
 
         // INSTANTIATE NEW TASK
         Task task = (new Task).value(msg.value)(
@@ -59,24 +42,37 @@ contract Tasks {
             name,
             reputation,
             encryption,
-            tasks.length,
-            devices,
-            users
+            tasks.length
         );
 
-        // PUSH TO OPEN LIST & SEND EVENT
+        // LIST IT
         tasks.push(task);
-        emit Update(tasks);
     }
 
     // REMOVE TASK
     function remove(uint index) public {
 
-        // CONDITION
+        // IF THE CALLER IS THE TASK CONTRACT ITSELF
         require(tasks[index] == Task(msg.sender), 'you are not permitted to call this');
-
-        // DELETE & SEND EVENT
         delete tasks[index];
-        emit Update(tasks);
+    }
+
+    // INITIALIZE CONTRACT
+    function init(
+        UserManager _user_manager,
+        DeviceManager _device_manager,
+        TokenManager _token_manager
+    ) public {
+
+        // IF THE CONTRACT HAS NOT BEEN INITIALIZED
+        require(!initialized, 'contract has already been initialized');
+
+        // SET REFERENCES
+        user_manager = _user_manager;
+        device_manager = _device_manager;
+        token_manager = _token_manager;
+
+        // BLOCK FURTHER MODIFICATION
+        initialized = true;
     }
 }

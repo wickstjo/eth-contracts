@@ -10,13 +10,13 @@ contract Device {
     address[] public assignments;
 
     // ACTIVE STATUS
-    bool public status;
+    bool public active;
 
     // WHEN CREATED, SET DEFAULT PARAMS
     constructor(address payable _owner, string memory _nickname) public {
         owner = _owner;
         nickname = _nickname;
-        status = true;
+        active = true;
     }
 
     // NEW ADDED EVENT
@@ -27,19 +27,19 @@ contract Device {
 
         // IF CALLER IS THE DEVICE OWNER
         require(msg.sender == owner, 'you are not the owner');
-        status = !status;
+        active = !active;
     }
 
     // ASSIGN TASK TO DEVICE
-    function assign(address _task, address payable sender) public {
+    function assign(address payable sender) public {
 
         // IF SENDER IS THE DEVICE OWNER
         // IF THE DEVICE IS ACTIVE
         require(sender == owner, 'you are not the owner');
-        require(status, 'device is out of commission');
+        require(active, 'device is inactive');
 
         // PUSH ASSIGNMENT & EMIT EVENT
-        assignments.push(_task);
-        emit Update(_task);
+        assignments.push(msg.sender);
+        emit Update(msg.sender);
     }
 }
