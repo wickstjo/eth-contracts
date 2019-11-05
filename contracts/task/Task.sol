@@ -75,29 +75,39 @@ contract Task {
         device_manager.fetch(id).assign(msg.sender);
     }
 
-    // SUBMIT DATA
-    function submit(string memory ipfs) public {
+    // SUBMIT RESPONSE DATA
+    function submit(
+        string memory ipfs,
+        string memory key,
+        address proxy
+    ) public {
 
-        // CONDITIONS
-        require(msg.sender == seller, 'you are not the seller');
+        // USER MANAGER REFERENCES
+        address user_manager = task_manager.user_manager;
+
+        // IF THE SENDER IS THE TASK MANAGER
+        // IF THE SENDER PROXY IS THE SELLER
+        require(msg.sender == task_manager, 'permission denied');
+        require(proxy == seller, 'you are not the seller');
 
         // ADD RESPONSE TO BUYER
-        users.fetch(buyer).add(name, ipfs);
+        user_manager.fetch(buyer).add(key, ipfs);
 
-        // REMOVE TASK, SEND EVENT & SELF DESTRUCT
-        tasks.remove(position);
+        // UNLIST TASK & SELF DESTRUCT
+        task_manager.remove(position);
         selfdestruct(seller);
     }
 
     // DESTROY THE CONTRACT & PAY PARTICIPANTS
     function release() public {
 
-        // CONDITIONS
+        // IF SENDER IS BUYER
+        // IF TASK IS NOT LOCKED
         require(msg.sender == buyer, 'You are not the creator');
-        require(!locked, 'Task has already been accepted');
+        require(!locked, 'The task is locked');
 
         // REMOVE TASK, SEND EVENT & SELF DESTRUCT
-        tasks.remove(position);
+        task_manager.remove(position);
         selfdestruct(buyer);
     }
 }

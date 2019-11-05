@@ -75,4 +75,13 @@ contract TaskManager {
         // BLOCK FURTHER MODIFICATION
         initialized = true;
     }
+
+    // SUBMIT RESPONSE DATA TO TASK
+    function submit(
+        address _task,
+        string memory _ipfs,
+        string memory _key
+    ) public {
+        tasks[_task].submit(_ipfs, _key, msg.sender);
+    }
 }
