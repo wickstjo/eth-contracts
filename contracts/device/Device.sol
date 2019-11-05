@@ -10,13 +10,15 @@ contract Device {
     address[] public assignments;
 
     // ACTIVE STATUS
-    bool public active;
+    bool public active = true;
 
     // WHEN CREATED, SET DEFAULT PARAMS
-    constructor(address payable _owner, string memory _nickname) public {
+    constructor(
+        address payable _owner,
+        string memory _nickname
+    ) public {
         owner = _owner;
         nickname = _nickname;
-        active = true;
     }
 
     // NEW ADDED EVENT

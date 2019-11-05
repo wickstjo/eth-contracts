@@ -1,7 +1,9 @@
 pragma solidity ^0.5.0;
 
-// IMPORT HELPER CONTRACT INTERFACES
+// IMPORT INTERFACES
 import { TaskManager } from './Manager.sol';
+import { DeviceManager } from '../device/Manager.sol';
+import { UserManager } from '../user/Manager.sol';
 
 contract Task {
 
@@ -18,9 +20,13 @@ contract Task {
     string public encryption;
     uint public reward;
 
-    // TASK MANAGER REFERENCE & LISTED INDEX
-    TaskManager public task_manager;
+    // LISTED INDEX
     uint public position;
+
+    // CONTRACT REFERENCES
+    UserManager user_manager;
+    DeviceManager device_manager;
+    TaskManager task_manager;
 
     // WHEN THE CONTRACT IS CREATED
     constructor(
@@ -28,7 +34,9 @@ contract Task {
         string memory _name,
         uint _reputation,
         string memory _encryption,
-        uint _position
+        uint _position,
+        UserManager _user_manager,
+        DeviceManager _device_manager
     ) public payable {
 
         // SET TASK OWNER
@@ -40,17 +48,17 @@ contract Task {
         encryption = _encryption;
         reward = msg.value;
 
-        // SET TASK MANAGER REFERENCE & LISTED INDEX
-        task_manager = TaskManager(msg.sender);
+        // SET LISTED INDEX
         position = _position;
+
+        // SET CONTRACT REFERENCES
+        user_manager = _user_manager;
+        device_manager = _device_manager;
+        task_manager = TaskManager(msg.sender);
     }
 
     // ACCEPT TASK
     function accept(string memory id) public payable {
-
-        // CONTRACT REFERENCES
-        address user_manager = task_manager.user_manager;
-        address device_manager = task_manager.device_manager;
 
         // IF THE TASK IS NOT LOCKED
         // IF TRANSACTION VALUE IS HALF OF REWARD
@@ -64,15 +72,15 @@ contract Task {
         require(user_manager.exists(msg.sender), 'you are not a registered user');
         require(user_manager.fetch(msg.sender).reputation() >= reputation, 'not enough reputation');
         require(device_manager.exists(id), 'the device is not registered');
-        require(device_manager.fetch(id).owner() == msg.sender, 'you are not the device owner');
-        require(device_manager.fetch(id).status(), 'device is not active');
+        require(device_manager.fetch_device(id).owner() == msg.sender, 'you are not the device owner');
+        require(device_manager.fetch_device(id).active(), 'device is not active');
 
         // SET SELLER & LOCK THE TASK
         seller = msg.sender;
         locked = true;
 
         // ASSIGN TASK TO THE DEVICE
-        device_manager.fetch(id).assign(msg.sender);
+        device_manager.fetch_device(id).assign(msg.sender);
     }
 
     // SUBMIT RESPONSE DATA
@@ -82,16 +90,13 @@ contract Task {
         address proxy
     ) public {
 
-        // USER MANAGER REFERENCES
-        address user_manager = task_manager.user_manager;
-
         // IF THE SENDER IS THE TASK MANAGER
         // IF THE SENDER PROXY IS THE SELLER
-        require(msg.sender == task_manager, 'permission denied');
+        require(msg.sender == address(task_manager), 'permission denied');
         require(proxy == seller, 'you are not the seller');
 
         // ADD RESPONSE TO BUYER
-        user_manager.fetch(buyer).add(key, ipfs);
+        user_manager.fetch(buyer).add_task(key, ipfs);
 
         // UNLIST TASK & SELF DESTRUCT
         task_manager.remove(position);

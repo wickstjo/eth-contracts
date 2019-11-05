@@ -1,17 +1,16 @@
 pragma solidity ^0.5.0;
 
-// IMPORT USER INTERFACE
+// IMPORT INTERFACE
 import { User } from './User.sol';
-import { TaskManager } from '../task/Manager.sol';
 
 contract UserManager {
 
     // HASHMAP OF USER CONTRACTS -- [OWNER => LOCATION]
     mapping (address => User) public users;
 
-    // TASK MANAGER REFERENCE & INIT STATUS
-    TaskManager task_manager;
+    // INIT STATUS & TASK MANAGER ADDRESS
     bool initialized = false;
+    address task_manager;
 
     // CHECK IF USER EXISTS
     function exists(address user) public view returns(bool) {
@@ -39,11 +38,11 @@ contract UserManager {
         require(!exists(msg.sender), 'user already exists');
 
         // PUSH ENTRY TO HASHMAP
-        users[msg.sender] = new User(nickname, address(this));
+        users[msg.sender] = new User(nickname, task_manager);
     }
 
     // INITIALIZE CONTRACT
-    function init(TaskManager _task_manager) public {
+    function init(address _task_manager) public {
 
         // IF THE CONTRACT HAS NOT BEEN INITIALIZED
         require(!initialized, 'contract has already been initialized');

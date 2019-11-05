@@ -1,7 +1,7 @@
 pragma solidity ^0.5.0;
 pragma experimental ABIEncoderV2;
 
-// IMPORT DEVICE CONTRACT
+// IMPORT INTERFACES
 import { Device } from './Device.sol';
 import { UserManager } from '../user/Manager.sol';
 
@@ -13,27 +13,9 @@ contract DeviceManager {
     // USER DEVICE COLLECTION, [USER ADDRESS => LIST OF DEVICE IDS]
     mapping (address => string[]) collections;
 
-    // INIT STATUS
+    // INIT STATUS & USER MANAGER REFERENCE
     bool initialized = false;
-
-    // USER MANAGER CONTRACT REFERENCE
     UserManager user_manager;
-
-    // DEVICE ADDED EVENT
-    event Update(address user, string[] devices);
-
-    // INITIALIZE CONTRACT
-    function init(UserManager _user_manager) public {
-
-        // IF THE CONTRACT HAS NOT BEEN INITIALIZED BEFORE
-        require(!initialized, 'contract has already been initialized');
-
-        // SET USER MANAGER REFERENCE
-        user_manager = _user_manager;
-
-        // BLOCK FURTHER MODIFICATIONS
-        initialized = true;
-    }
 
     // CHECK IF DEVICE EXISTS
     function exists(string memory _hash) public view returns(bool) {
@@ -79,8 +61,18 @@ contract DeviceManager {
         // PUSH NEW ENTRY TO BOTH HASHMAPS
         devices[id] = new Device(msg.sender, nickname);
         collections[msg.sender].push(id);
+    }
 
-        // EMIT EVENT
-        emit Update(msg.sender, collections[msg.sender]);
+    // INITIALIZE
+    function init(UserManager _user_manager) public {
+
+        // IF THE CONTRACT HAS NOT BEEN INITIALIZED BEFORE
+        require(!initialized, 'contract has already been initialized');
+
+        // SET USER MANAGER REFERENCE
+        user_manager = _user_manager;
+
+        // BLOCK FURTHER MODIFICATIONS
+        initialized = true;
     }
 }

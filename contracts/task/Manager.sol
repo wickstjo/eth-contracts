@@ -15,8 +15,8 @@ contract TaskManager {
     bool public initialized = false;
 
     // REFERENCES
-    UserManager user_manager;
-    DeviceManager device_manager;
+    UserManager public user_manager;
+    DeviceManager public device_manager;
     TokenManager token_manager;
 
     // ADD TASK
@@ -42,7 +42,9 @@ contract TaskManager {
             name,
             reputation,
             encryption,
-            tasks.length
+            tasks.length,
+            user_manager,
+            device_manager
         );
 
         // LIST IT
@@ -57,31 +59,31 @@ contract TaskManager {
         delete tasks[index];
     }
 
-    // INITIALIZE CONTRACT
-    function init(
-        UserManager _user_manager,
-        DeviceManager _device_manager,
-        TokenManager _token_manager
-    ) public {
-
-        // IF THE CONTRACT HAS NOT BEEN INITIALIZED
-        require(!initialized, 'contract has already been initialized');
-
-        // SET REFERENCES
-        user_manager = _user_manager;
-        device_manager = _device_manager;
-        token_manager = _token_manager;
-
-        // BLOCK FURTHER MODIFICATION
-        initialized = true;
-    }
-
     // SUBMIT RESPONSE DATA TO TASK
     function submit(
         address _task,
         string memory _ipfs,
         string memory _key
     ) public {
-        tasks[_task].submit(_ipfs, _key, msg.sender);
+        Task(_task).submit(_ipfs, _key, msg.sender);
+    }
+
+    // INITIALIZE
+    function init(
+        address _user_manager,
+        address _device_manager,
+        address _token_manager
+    ) public {
+
+        // IF THE CONTRACT HAS NOT BEEN INITIALIZED
+        require(!initialized, 'contract has already been initialized');
+
+        // SET REFERENCES
+        user_manager = UserManager(_user_manager);
+        device_manager = DeviceManager(_device_manager);
+        token_manager = TokenManager(_token_manager);
+
+        // BLOCK FURTHER MODIFICATION
+        initialized = true;
     }
 }
