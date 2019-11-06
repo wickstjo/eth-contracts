@@ -14,6 +14,9 @@ contract TaskManager {
     // OPEN TASKS
     Task[] public open;
 
+    // TIME LIMIT FOR TASK
+    uint limit = 5000;
+
     // INIT STATUS
     bool initialized = false;
 
@@ -43,7 +46,7 @@ contract TaskManager {
         // USER HAS ENOUGH TOKENS
         require(initialized, 'contracts have not been initialized');
         require(user_manager.exists(msg.sender), 'you are not a registered user');
-        require(token_manager.balance(msg.sender) >= 1, 'you do not have the tokens to do this');
+        require(token_manager.balance(msg.sender) >= 1, 'not enough tokens');
 
         // REMOVE A TOKEN FROM SENDER
         token_manager.remove(1, msg.sender);
@@ -54,9 +57,7 @@ contract TaskManager {
             name,
             reputation,
             encryption,
-            open.length,
-            user_manager,
-            device_manager
+            open.length
         );
 
         // ADD HASHMAP ENTRY & LIST IT
@@ -64,24 +65,50 @@ contract TaskManager {
         open.push(task);
     }
 
-    // UNLIST TASK
-    function unlist() public {
+    // FETCH TASK
+    function fetch(address _task) public view returns(Task) {
 
         // IF THE TASK EXISTS
-        require(exists(msg.sender), 'task does not exist');
-        delete open[Task(msg.sender).position()];
+        require(exists(_task), 'task does not exist');
+        return tasks[_task];
     }
 
     // ACCEPT TASK
-    function accept(address _task, string memory _device) public {
+    function accept(
+        address _task,
+        string memory _device
+    ) public payable {
 
         // IF THE TASK EXISTS
         // IF THE DEVICE EXISTS
         require(exists(_task), 'task does not exist');
         require(device_manager.exists(_device), 'device does not exist');
+
+        // SHORTHAND
+        Task task = fetch(_task);
+
+        // IF THE TASK IS NOT LOCKED
+        require(!task.locked(), 'task is locked');
+        require(msg.value >= task.reward() / 2, 'insufficient funds given');
+
+        // IF THE USER IS REGISTERED
+        // IF THE USER HAS ENOUGH REPUTATION
+        require(user_manager.exists(msg.sender), 'you are not a registered user');
+        require(user_manager.fetch(msg.sender).reputation() >= task.reputation(), 'not enough reputation');
+
+        // IF THE SENDER IS THE DEVICE OWNER
+        // IF THE DEVICE IS ACTIVE
+        require(device_manager.fetch_device(_device).owner() == msg.sender, 'you are not the device owner');
+        require(device_manager.fetch_device(_device).active(), 'device is not active');
+
+        // ACCEPT THE TASK & FORWARD THE FUNDS
+        task.accept.value(msg.value)(msg.sender);
+
+        // ASSIGN TASK TO THE DEVICE
+        device_manager.fetch_device(_device).assign(_task);
     }
 
-    // SUBMIT RESPONSE DATA TO TASK
+    // SUBMIT TASK RESULT
     function submit(
         address _task,
         string memory _ipfs,
@@ -89,10 +116,45 @@ contract TaskManager {
     ) public {
 
         // IF THE TASK EXISTS
-        // IF THE SENDER IS THE SELLER
         require(exists(_task), 'task does not exist');
-        require(tasks[_task].seller() == msg.sender, 'you are not the seller');
-        tasks[_task].submit(_ipfs, _key);
+
+        // SHORTHAND
+        Task task = fetch(_task);
+
+        // IF THE SENDER IS THE SELLER
+        require(task.seller() == msg.sender, 'you are not the seller');
+
+        // SEND THE RESULT TO THE BUYERS USER CONTRACT
+        user_manager.fetch(task.buyer()).add_result(_key, _ipfs);
+
+        // REWARD BOTH PARTIES WITH REPUTATION
+        user_manager.fetch(task.buyer()).reward(1);
+        user_manager.fetch(msg.sender).reward(2);
+
+        // UNLIST & DESTROY THE TASK
+        delete open[task.index()];
+        task.complete();
+    }
+
+    // RELEASE THE TASK
+    function release(address _task) public {
+
+        // IF THE TASK EXISTS
+        require(exists(_task), 'task does not exist');
+
+        // SHORTHAND
+        Task task = fetch(_task);
+
+        // IF THE SENDER IS THE BUYER
+        require(task.buyer() == msg.sender, 'you are not the buyer');
+
+        // IF THE TASK IS LOCKED & THE TIME LIMIT HAS NOT BEEN EXCEEDED
+        if (task.locked() && block.timestamp < task.created() + limit) {
+
+            // UNLIST & DESTROY THE TASK
+            delete open[task.index()];
+            task.release();
+        }
     }
 
     // INITIALIZE

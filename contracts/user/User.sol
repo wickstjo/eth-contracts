@@ -3,12 +3,12 @@ pragma experimental ABIEncoderV2;
 
 contract User {
 
-    // NICKNAME & CURRENT REPUTATION
+    // NAME & CURRENT REPUTATION
     string public name;
     uint public reputation = 0;
 
-    // HASHMAP OF TASK RESPONSES -- [TASK LOCATION => RESPONSE DATA]
-    mapping (address => data) public responses;
+    // MAP OF TASK RESULTS -- [TASK LOCATION => RESPONSE DATA]
+    mapping (address => data) public results;
 
     // TASK RESPONSE DATA STRUCT
     struct data {
@@ -29,23 +29,30 @@ contract User {
     }
 
     // ADD TASK RESULT
-    function add_response(string memory _key, string memory _ipfs) public {
+    function add_result(string memory _key, string memory _ipfs) public {
 
         // IF SENDER IS THE TASK MANAGER
         require(msg.sender == task_manager, 'permission denied');
 
         // PUSH ENTRY TO HASHMAP
-        responses[msg.sender] = data({
+        results[msg.sender] = data({
             key: _key,
             ipfs: _ipfs
         });
-
-        // INCREASE THE USERS REPUTATION BY ONE
-        reputation += 1;
     }
 
     // FETCH TASK RESULT
-    function fetch_response(address task) public view returns (data memory) {
-        return responses[task];
+    function fetch_result(address task) public view returns (data memory) {
+        return results[task];
+    }
+
+    // REWARD REPUTATION
+    function reward(uint amount) public {
+
+        // IF SENDER IS THE TASK MANAGER
+        require(msg.sender == task_manager, 'permission denied');
+
+        // INCREASE BY AMOUNT
+        reputation += amount;
     }
 }

@@ -13,9 +13,12 @@ contract DeviceManager {
     // USER DEVICE COLLECTION, [USER ADDRESS => LIST OF DEVICE IDS]
     mapping (address => string[]) collections;
 
-    // INIT STATUS & USER MANAGER REFERENCE
+    // INIT STATUS
     bool initialized = false;
+
+    // REFERENCES
     UserManager user_manager;
+    address task_manager;
 
     // CHECK IF DEVICE EXISTS
     function exists(string memory _hash) public view returns(bool) {
@@ -46,7 +49,7 @@ contract DeviceManager {
         require(user_manager.exists(msg.sender), 'you are not a registered user');
 
         // PUSH NEW ENTRY TO BOTH HASHMAPS
-        devices[id] = new Device(msg.sender, name);
+        devices[id] = new Device(msg.sender, name, task_manager);
         collections[msg.sender].push(id);
     }
 
@@ -64,13 +67,14 @@ contract DeviceManager {
     }
 
     // INITIALIZE
-    function init(UserManager _user_manager) public {
+    function init(UserManager _user_manager, address _task_manager) public {
 
         // IF THE CONTRACT HAS NOT BEEN INITIALIZED BEFORE
         require(!initialized, 'contract has already been initialized');
 
-        // SET USER MANAGER REFERENCE
+        // SET REFERENCES
         user_manager = _user_manager;
+        task_manager = _task_manager;
 
         // BLOCK FURTHER MODIFICATIONS
         initialized = true;

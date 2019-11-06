@@ -1,42 +1,34 @@
 pragma solidity ^0.5.0;
 
-// IMPORT INTERFACES
-import { TaskManager } from './Manager.sol';
-import { DeviceManager } from '../device/Manager.sol';
-import { UserManager } from '../user/Manager.sol';
-
 contract Task {
 
-    // TASK BUYER & SELLER
+    // BUYER & SELLER
     address payable public buyer;
     address payable public seller;
 
     // LOCKED STATUS
     bool public locked = false;
 
-    // TASK PARAMS
+    // SPECIFICATIONS
     string public name;
     uint public reputation;
     string public encryption;
     uint public reward;
 
-    // LISTED INDEX
-    uint public position;
+    // LISTED INDEX & CREATED TIMESTAMP
+    uint public index;
+    uint256 public created;
 
-    // CONTRACT REFERENCES
-    UserManager user_manager;
-    DeviceManager device_manager;
-    TaskManager task_manager;
+    // TASK MANAGER REFERENCE
+    address task_manager;
 
-    // WHEN THE CONTRACT IS CREATED
+    // WHEN CREATED
     constructor(
         address payable _buyer,
         string memory _name,
         uint _reputation,
         string memory _encryption,
-        uint _position,
-        UserManager _user_manager,
-        DeviceManager _device_manager
+        uint _index
     ) public payable {
 
         // SET TASK OWNER
@@ -48,65 +40,56 @@ contract Task {
         encryption = _encryption;
         reward = msg.value;
 
-        // SET LISTED INDEX
-        position = _position;
+        // SET LISTED INDEX & CREATED TIMESTAMP
+        index = _index;
+        created = block.timestamp;
 
-        // SET CONTRACT REFERENCES
-        user_manager = _user_manager;
-        device_manager = _device_manager;
-        task_manager = TaskManager(msg.sender);
+        // TASK MANAGER REFERENCE
+        task_manager = msg.sender;
     }
 
     // ACCEPT TASK
-    function accept(string memory id) public payable {
+    function accept(address payable _seller) public payable {
 
-        // IF THE TASK IS NOT LOCKED
-        // IF TRANSACTION VALUE IS HALF OF REWARD
-        // IF THE USER IS REGISTERED
-        // IF THE USERS REPUTATION IS EQUAL OR HIGHER THAN THE REQUIREMENT
-        // IF THE PERFORMING DEVICE IS REGISTERED
-        // IF THE DEVICE IS OWNED BY THE USER
-        // IF THE DEVICE IS ACTIVE
-        require(!locked, 'task is locked');
-        require(msg.value >= reward / 2, 'insufficient funds given');
-        require(user_manager.exists(msg.sender), 'you are not a registered user');
-        require(user_manager.fetch(msg.sender).reputation() >= reputation, 'not enough reputation');
-        require(device_manager.exists(id), 'the device is not registered');
-        require(device_manager.fetch_device(id).owner() == msg.sender, 'you are not the device owner');
-        require(device_manager.fetch_device(id).active(), 'device is not active');
+        // IF THE SENDER IS THE TASK MANAGER
+        require(msg.sender == task_manager, 'permission denied');
 
         // SET SELLER & LOCK THE TASK
-        seller = msg.sender;
+        seller = _seller;
         locked = true;
+    }
 
-        // ASSIGN TASK TO THE DEVICE
-        device_manager.fetch_device(id).assign(msg.sender);
+    // UNLOCK TASK
+    function unlock() public {
+
+        // IF THE SENDER IS THE SELLER
+        require(msg.sender == seller, 'permission denied');
+
+        // UNLOCK THE TASK & RESET SELLER
+        locked = false;
+        seller = 0x0000000000000000000000000000000000000000;
+
+        // TRANSFER 25% OF THE REWARD BACK
+        seller.transfer(reward / 4);
     }
 
     // COMPLETE THE TASK
     function complete() public {
 
         // IF THE SENDER IS THE TASK MANAGER
-        require(msg.sender == address(task_manager), 'permission denied');
+        require(msg.sender == task_manager, 'permission denied');
 
-        // ADD RESPONSE TO BUYERS USER CONTRACT
-        user_manager.fetch(buyer).add_response(key, ipfs);
-
-        // UNLIST TASK, SELF DESTRUCT & TRANSFER FUNDS TO THE SELLER
-        task_manager.unlist();
+        // SELF DESTRUCT & TRANSFER FUNDS TO THE SELLER
         selfdestruct(seller);
     }
 
     // RELEASE THE TASK
     function release() public {
 
-        // IF SENDER IS BUYER
-        // IF TASK IS NOT LOCKED
-        require(msg.sender == buyer, 'You are not the creator');
-        require(!locked, 'The task is locked');
+        // IF THE SENDER IS THE TASK MANAGER
+        require(msg.sender == task_manager, 'permission denied');
 
-        // UNLIST TASK, SELF DESTRUCT & TRANSFER FUNDS TO THE BUYER
-        task_manager.unlist();
+        // SELF DESTRUCT & TRANSFER FUNDS TO THE BUYER
         selfdestruct(buyer);
     }
 }

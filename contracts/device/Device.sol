@@ -2,26 +2,35 @@ pragma solidity ^0.5.0;
 
 contract Device {
 
-    // DEVICE PARAMS
+    // PROPERTIES
     address payable public owner;
-    string name;
+    string public name;
 
-    // LATEST ASSIGNED TASK
+    // ASSIGNMENT BACKLOG
     address[] public assignments;
 
     // ACTIVE STATUS
     bool public active = true;
 
-    // NEW ASSIGNMENT EVENT
-    event Update(address task);
+    // TASK MANAGER REFERENCE
+    address task_manager;
 
-    // WHEN CREATED, SET DEFAULT PARAMS
+    // NEW ASSIGNMENT EVENT
+    event Update(address[] assignments);
+
+    // WHEN CREATED
     constructor(
         address payable _owner,
-        string memory _name
+        string memory _name,
+        address _task_manager
     ) public {
+
+        // SET BASIC PROPERTIES
         owner = _owner;
         name = _name;
+
+        // SET TASK MANAGER REFERENCE
+        task_manager = _task_manager;
     }
 
     // TOGGLE CONTRACT STATUS
@@ -33,15 +42,13 @@ contract Device {
     }
 
     // ASSIGN TASK TO DEVICE
-    function assign(address payable sender) public {
+    function assign(address _task) public {
 
-        // IF SENDER IS THE DEVICE OWNER
-        // IF THE DEVICE IS ACTIVE
-        require(sender == owner, 'you are not the owner');
-        require(active, 'device is inactive');
+        // IF THE SENDER IS THE TASK MANAGER
+        require(msg.sender == task_manager, 'permission denied');
 
         // PUSH ASSIGNMENT & EMIT EVENT
-        assignments.push(msg.sender);
-        emit Update(msg.sender);
+        assignments.push(_task);
+        emit Update(assignments);
     }
 }

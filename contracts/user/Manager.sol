@@ -30,7 +30,7 @@ contract UserManager {
     }
 
     // ADD ENTRY TO HASHMAP
-    function add(string memory nickname) public {
+    function add(string memory name) public {
 
         // IF THE CONTRACT HAS BEEN INITIALIZED
         // IF THE USER DOES NOT EXIST
@@ -38,7 +38,7 @@ contract UserManager {
         require(!exists(msg.sender), 'user already exists');
 
         // PUSH ENTRY TO HASHMAP
-        users[msg.sender] = new User(nickname, task_manager);
+        users[msg.sender] = new User(name, task_manager);
     }
 
     // INITIALIZE CONTRACT
