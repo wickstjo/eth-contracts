@@ -26,15 +26,15 @@ contract UserManager {
 
         // IF THE USER EXISTS
         require(exists(user), 'user does not exist');
-
-        // FETCH DETAILS
         return users[user];
     }
 
     // ADD ENTRY TO HASHMAP
     function add(string memory nickname) public {
 
+        // IF THE CONTRACT HAS BEEN INITIALIZED
         // IF THE USER DOES NOT EXIST
+        require(initialized, 'contract has not been initialized');
         require(!exists(msg.sender), 'user already exists');
 
         // PUSH ENTRY TO HASHMAP

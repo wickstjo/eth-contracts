@@ -4,7 +4,7 @@ contract Device {
 
     // DEVICE PARAMS
     address payable public owner;
-    string nickname;
+    string name;
 
     // LATEST ASSIGNED TASK
     address[] public assignments;
@@ -12,17 +12,17 @@ contract Device {
     // ACTIVE STATUS
     bool public active = true;
 
+    // NEW ASSIGNMENT EVENT
+    event Update(address task);
+
     // WHEN CREATED, SET DEFAULT PARAMS
     constructor(
         address payable _owner,
-        string memory _nickname
+        string memory _name
     ) public {
         owner = _owner;
-        nickname = _nickname;
+        name = _name;
     }
-
-    // NEW ADDED EVENT
-    event Update(address task);
 
     // TOGGLE CONTRACT STATUS
     function toggle() public {

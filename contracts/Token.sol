@@ -8,10 +8,8 @@ contract TokenManager {
     // TOKEN PRICE
     uint public price;
 
-    // INIT STATUS
+    // INIT STATUS & TASK MANAGER REFERENCE
     bool initialized = false;
-
-    // TASK MANAGER REFERENCE
     address task_manager;
 
     // FETCH USER BALANCE

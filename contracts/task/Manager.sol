@@ -8,16 +8,28 @@ import { TokenManager } from '../Token.sol';
 
 contract TaskManager {
 
+    // HASHMAP OF UNIQUE TASKS, [LOCATION => TASK INSTANCE]
+    mapping (address => Task) tasks;
+
     // OPEN TASKS
-    Task[] public tasks;
+    Task[] public open;
 
     // INIT STATUS
-    bool public initialized = false;
+    bool initialized = false;
 
     // REFERENCES
-    UserManager public user_manager;
-    DeviceManager public device_manager;
+    UserManager user_manager;
+    DeviceManager device_manager;
     TokenManager token_manager;
+
+    // CHECK IF TASK EXISTS
+    function exists(address _task) public view returns(bool) {
+        if (address(tasks[_task]) != 0x0000000000000000000000000000000000000000) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     // ADD TASK
     function add(
@@ -42,21 +54,31 @@ contract TaskManager {
             name,
             reputation,
             encryption,
-            tasks.length,
+            open.length,
             user_manager,
             device_manager
         );
 
-        // LIST IT
-        tasks.push(task);
+        // ADD HASHMAP ENTRY & LIST IT
+        tasks[address(task)] = task;
+        open.push(task);
     }
 
-    // REMOVE TASK
-    function remove(uint index) public {
+    // UNLIST TASK
+    function unlist() public {
 
-        // IF THE CALLER IS THE TASK CONTRACT ITSELF
-        require(tasks[index] == Task(msg.sender), 'you are not permitted to call this');
-        delete tasks[index];
+        // IF THE TASK EXISTS
+        require(exists(msg.sender), 'task does not exist');
+        delete open[Task(msg.sender).position()];
+    }
+
+    // ACCEPT TASK
+    function accept(address _task, string memory _device) public {
+
+        // IF THE TASK EXISTS
+        // IF THE DEVICE EXISTS
+        require(exists(_task), 'task does not exist');
+        require(device_manager.exists(_device), 'device does not exist');
     }
 
     // SUBMIT RESPONSE DATA TO TASK
@@ -65,7 +87,12 @@ contract TaskManager {
         string memory _ipfs,
         string memory _key
     ) public {
-        Task(_task).submit(_ipfs, _key, msg.sender);
+
+        // IF THE TASK EXISTS
+        // IF THE SENDER IS THE SELLER
+        require(exists(_task), 'task does not exist');
+        require(tasks[_task].seller() == msg.sender, 'you are not the seller');
+        tasks[_task].submit(_ipfs, _key);
     }
 
     // INITIALIZE

@@ -35,6 +35,21 @@ contract DeviceManager {
         }
     }
 
+    // ADD DEVICE
+    function add(string memory id, string memory name) public {
+
+        // IF THE CONTRACT HAS BEEN INITIALIZED
+        // IF THE DEVICE DOES NOT EXIST
+        // IF THE USER IS REGISTERED
+        require(initialized, 'contract has not been initialized');
+        require(!exists(id), 'device already exist');
+        require(user_manager.exists(msg.sender), 'you are not a registered user');
+
+        // PUSH NEW ENTRY TO BOTH HASHMAPS
+        devices[id] = new Device(msg.sender, name);
+        collections[msg.sender].push(id);
+    }
+
     // FETCH SPECIFIC DEVICE
     function fetch_device(string memory id) public view returns(Device) {
 
@@ -46,21 +61,6 @@ contract DeviceManager {
     // FETCH USER COLLECTION
     function fetch_collection(address user) public view returns(string[] memory) {
         return collections[user];
-    }
-
-    // ADD DEVICE
-    function add(string memory id, string memory nickname) public {
-
-        // IF THE CONTRACT HAS BEEN INITIALIZED
-        // IF THE DEVICE DOES NOT EXIST
-        // IF THE USER IS REGISTERED
-        require(initialized, 'contract has not been initialized');
-        require(!exists(id), 'device already exist');
-        require(user_manager.exists(msg.sender), 'you are not a registered user');
-
-        // PUSH NEW ENTRY TO BOTH HASHMAPS
-        devices[id] = new Device(msg.sender, nickname);
-        collections[msg.sender].push(id);
     }
 
     // INITIALIZE
