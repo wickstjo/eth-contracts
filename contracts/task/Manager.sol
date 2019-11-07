@@ -94,7 +94,7 @@ contract TaskManager {
         // IF THE USER IS REGISTERED
         // IF THE USER HAS ENOUGH REPUTATION
         require(user_manager.exists(msg.sender), 'you are not a registered user');
-        require(user_manager.fetch(msg.sender).reputation() >= task.reputation(), 'not enough reputation');
+        require(user_manager.fetch_user(msg.sender).reputation() >= task.reputation(), 'not enough reputation');
 
         // IF THE SENDER IS THE DEVICE OWNER
         // IF THE DEVICE IS ACTIVE
@@ -125,11 +125,11 @@ contract TaskManager {
         require(task.seller() == msg.sender, 'you are not the seller');
 
         // SEND THE RESULT TO THE BUYERS USER CONTRACT
-        user_manager.fetch(task.buyer()).add_result(_key, _ipfs);
+        user_manager.fetch_user(task.buyer()).add_result(_key, _ipfs);
 
         // REWARD BOTH PARTIES WITH REPUTATION
-        user_manager.fetch(task.buyer()).reward(1);
-        user_manager.fetch(msg.sender).reward(2);
+        user_manager.fetch_user(task.buyer()).reward(1);
+        user_manager.fetch_user(msg.sender).reward(2);
 
         // UNLIST & DESTROY THE TASK
         delete open[task.index()];

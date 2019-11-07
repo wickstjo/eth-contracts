@@ -5,8 +5,11 @@ import { User } from './User.sol';
 
 contract UserManager {
 
-    // HASHMAP OF USER CONTRACTS -- [OWNER => LOCATION]
+    // MAP OF USER INSTANCES -- [OWNER => LOCATION]
     mapping (address => User) public users;
+
+    // ITERABLE LIST OF USERS
+    address[] everyone;
 
     // INIT STATUS & TASK MANAGER ADDRESS
     bool initialized = false;
@@ -21,8 +24,13 @@ contract UserManager {
         }
     }
 
+    // FETCH ALL USERS
+    function fetch_all() public view returns(address[] memory) {
+        return everyone;
+    }
+
     // FETCH USER
-    function fetch(address user) public view returns(User) {
+    function fetch_user(address user) public view returns(User) {
 
         // IF THE USER EXISTS
         require(exists(user), 'user does not exist');
@@ -37,8 +45,9 @@ contract UserManager {
         require(initialized, 'contract has not been initialized');
         require(!exists(msg.sender), 'user already exists');
 
-        // PUSH ENTRY TO HASHMAP
+        // PUSH ENTRY TO MAP & ARRAY
         users[msg.sender] = new User(name, task_manager);
+        everyone.push(msg.sender);
     }
 
     // INITIALIZE CONTRACT
