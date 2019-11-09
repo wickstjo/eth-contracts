@@ -65,8 +65,13 @@ contract TaskManager {
         open.push(task);
     }
 
+    // FETCH ALL OPEN TASKS
+    function fetch_open() public view returns(Task[] memory) {
+        return open;
+    }
+
     // FETCH TASK
-    function fetch(address _task) public view returns(Task) {
+    function fetch_task(address _task) public view returns(Task) {
 
         // IF THE TASK EXISTS
         require(exists(_task), 'task does not exist');
@@ -85,7 +90,7 @@ contract TaskManager {
         require(device_manager.exists(_device), 'device does not exist');
 
         // SHORTHAND
-        Task task = fetch(_task);
+        Task task = fetch_task(_task);
 
         // IF THE TASK IS NOT LOCKED
         require(!task.locked(), 'task is locked');
@@ -119,7 +124,7 @@ contract TaskManager {
         require(exists(_task), 'task does not exist');
 
         // SHORTHAND
-        Task task = fetch(_task);
+        Task task = fetch_task(_task);
 
         // IF THE SENDER IS THE SELLER
         require(task.seller() == msg.sender, 'you are not the seller');
@@ -143,7 +148,7 @@ contract TaskManager {
         require(exists(_task), 'task does not exist');
 
         // SHORTHAND
-        Task task = fetch(_task);
+        Task task = fetch_task(_task);
 
         // IF THE SENDER IS THE BUYER
         require(task.buyer() == msg.sender, 'you are not the buyer');

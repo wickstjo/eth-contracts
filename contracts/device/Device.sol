@@ -33,12 +33,17 @@ contract Device {
         task_manager = _task_manager;
     }
 
-    // TOGGLE CONTRACT STATUS
+    // TOGGLE STATUS
     function toggle() public {
 
         // IF CALLER IS THE DEVICE OWNER
         require(msg.sender == owner, 'you are not the owner');
         active = !active;
+    }
+
+    // FETCH ASSIGNMENT BACKLOG
+    function fetch_assignments() public view returns(address[] memory) {
+        return assignments;
     }
 
     // ASSIGN TASK TO DEVICE
