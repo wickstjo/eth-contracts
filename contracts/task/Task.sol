@@ -15,12 +15,16 @@ contract Task {
     string public encryption;
     uint public reward;
 
-    // LISTED INDEX & CREATED TIMESTAMP
-    uint public index;
+    // CREATED TIMESTAMP
     uint256 public created;
 
     // TASK MANAGER REFERENCE
     address task_manager;
+
+    // ASSIGNED DEVICE & RELEVANT INDEXES
+    string public device;
+    uint public task_index;
+    uint public device_index;
 
     // WHEN CREATED
     constructor(
@@ -40,8 +44,8 @@ contract Task {
         encryption = _encryption;
         reward = msg.value;
 
-        // SET LISTED INDEX & CREATED TIMESTAMP
-        index = _index;
+        // SET LISTED TASK INDEX & CREATED TIMESTAMP
+        task_index = _index;
         created = block.timestamp;
 
         // TASK MANAGER REFERENCE
@@ -49,7 +53,11 @@ contract Task {
     }
 
     // ACCEPT TASK
-    function accept(address payable _seller) public payable {
+    function accept(
+        address payable _seller,
+        string memory _device,
+        uint _index
+    ) public payable {
 
         // IF THE SENDER IS THE TASK MANAGER
         require(msg.sender == task_manager, 'permission denied');
@@ -57,6 +65,10 @@ contract Task {
         // SET SELLER & LOCK THE TASK
         seller = _seller;
         locked = true;
+
+        // SET PERFORMING DEVICE & LISTED INDEX
+        device = _device;
+        device_index = _index;
     }
 
     // UNLOCK TASK

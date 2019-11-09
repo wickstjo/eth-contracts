@@ -56,4 +56,14 @@ contract Device {
         assignments.push(_task);
         emit Update(assignments);
     }
+
+    // CLEAR ASSIGNMENT
+    function clear(uint index) public {
+
+        // IF THE SENDER IS THE TASK MANAGER
+        require(msg.sender == task_manager, 'permission denied');
+
+        // REMOVE ELEMENT
+        delete assignments[index];
+    }
 }

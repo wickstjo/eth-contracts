@@ -5,10 +5,13 @@ contract User {
 
     // NAME & CURRENT REPUTATION
     string public name;
-    uint public reputation = 0;
+    uint public reputation = 2;
 
     // MAP OF TASK RESULTS -- [TASK LOCATION => RESPONSE DATA]
     mapping (address => data) public results;
+
+    // ITERABLE ARRAY OF COMPLETED TASKS
+    address[] public completed;
 
     // TASK RESPONSE DATA STRUCT
     struct data {
@@ -39,6 +42,14 @@ contract User {
             key: _key,
             ipfs: _ipfs
         });
+
+        // PSUH TO COMPLETED
+        completed.push(msg.sender);
+    }
+
+    // FETCH ALL COMPLETED TASKS
+    function fetch_completed() public view returns(address[] memory) {
+        return completed;
     }
 
     // FETCH TASK RESULT

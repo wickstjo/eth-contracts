@@ -106,8 +106,11 @@ contract TaskManager {
         require(device_manager.fetch_device(_device).owner() == msg.sender, 'you are not the device owner');
         require(device_manager.fetch_device(_device).active(), 'device is not active');
 
+        // CURRENT ASSIGNMENT BACKLOG LENGTH
+        uint length = device_manager.fetch_device(_device).fetch_assignments().length;
+
         // ACCEPT THE TASK & FORWARD THE FUNDS
-        task.accept.value(msg.value)(msg.sender);
+        task.accept.value(msg.value)(msg.sender, _device, length);
 
         // ASSIGN TASK TO THE DEVICE
         device_manager.fetch_device(_device).assign(_task);
@@ -136,8 +139,11 @@ contract TaskManager {
         user_manager.fetch_user(task.buyer()).reward(1);
         user_manager.fetch_user(msg.sender).reward(2);
 
-        // UNLIST & DESTROY THE TASK
-        delete open[task.index()];
+        // UNLIST FROM OPEN TASKS & DEVICE BACKLOG
+        delete open[task.task_index()];
+        device_manager.fetch_device(task.device()).clear(task.device_index());
+
+        // SELF DESTRUCT TASK
         task.complete();
     }
 
@@ -153,12 +159,19 @@ contract TaskManager {
         // IF THE SENDER IS THE BUYER
         require(task.buyer() == msg.sender, 'you are not the buyer');
 
-        // IF THE TASK IS LOCKED & THE TIME LIMIT HAS NOT BEEN EXCEEDED
-        if (task.locked() && block.timestamp < task.created() + limit) {
+        // IF THE TASK IS LOCKED OR THE TIME LIMIT HAS BEEN EXCEEDED
+        if (!task.locked() || block.timestamp > task.created() + limit) {
 
             // UNLIST & DESTROY THE TASK
-            delete open[task.index()];
+            delete open[task.task_index()];
             task.release();
+
+            // IF THE TIME LIMIT WAS EXCEEDE
+            if (block.timestamp > task.created() + limit) {
+
+                // UNLIST FROM DEVICE BACKLOG
+                device_manager.fetch_device(task.device()).clear(task.device_index());
+            }
         }
     }
 
