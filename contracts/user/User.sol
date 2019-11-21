@@ -7,7 +7,7 @@ contract User {
     string public name;
     uint public reputation = 2;
 
-    // MAP OF TASK RESULTS -- [TASK LOCATION => RESPONSE DATA]
+    // MAP OF COMPLETED TASKS -- [TASK LOCATION => RESPONSE DATA]
     mapping (address => data) public results;
 
     // ITERABLE ARRAY OF COMPLETED TASKS
