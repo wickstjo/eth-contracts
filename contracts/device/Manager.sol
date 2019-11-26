@@ -7,10 +7,10 @@ import { UserManager } from '../user/Manager.sol';
 
 contract DeviceManager {
 
-    // UNIQUE DEVICES, [HASH ID => CONTRACT LOCATION]
+    // UNIQUE DEVICES, [DEVICE_ID => DEVICE CONTRACT]
     mapping (string => Device) devices;
 
-    // USER DEVICE COLLECTION, [USER ADDRESS => LIST OF DEVICE IDS]
+    // USER DEVICE COLLECTION, [ETH USER => ARRAY OF DEVICE_ID]
     mapping (address => string[]) collections;
 
     // INIT STATUS
@@ -30,8 +30,8 @@ contract DeviceManager {
     }
 
     // CHECK IF USER IS DEVICE OWNER
-    function is_owner(string memory _hash, address sender) public view returns(bool) {
-        if (exists(_hash) && devices[_hash].owner() == sender) {
+    function is_owner(string memory device_id, address sender) public view returns(bool) {
+        if (exists(device_id) && devices[device_id].owner() == sender) {
             return true;
         } else {
             return false;
@@ -39,18 +39,18 @@ contract DeviceManager {
     }
 
     // ADD DEVICE
-    function add(string memory id, string memory name) public {
+    function add_device(string memory device_id, string memory name) public {
 
         // IF THE CONTRACT HAS BEEN INITIALIZED
         // IF THE DEVICE DOES NOT EXIST
         // IF THE USER IS REGISTERED
         require(initialized, 'contract has not been initialized');
-        require(!exists(id), 'device already exist');
+        require(!exists(device_id), 'device already exist');
         require(user_manager.exists(msg.sender), 'you are not a registered user');
 
         // PUSH NEW ENTRY TO BOTH HASHMAPS
-        devices[id] = new Device(msg.sender, name, task_manager);
-        collections[msg.sender].push(id);
+        devices[device_id] = new Device(msg.sender, name, task_manager);
+        collections[msg.sender].push(device_id);
     }
 
     // FETCH SPECIFIC DEVICE

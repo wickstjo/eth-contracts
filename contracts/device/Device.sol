@@ -6,17 +6,14 @@ contract Device {
     address payable public owner;
     string public name;
 
-    // ASSIGNMENT BACKLOG
-    address[] public assignments;
-
-    // ACTIVE STATUS
-    bool public active = true;
+    // TASK BACKLOG
+    address[] public backlog;
 
     // TASK MANAGER REFERENCE
     address task_manager;
 
     // NEW ASSIGNMENT EVENT
-    event Update(address[] assignments);
+    event Update(address[] backlog);
 
     // WHEN CREATED
     constructor(
@@ -33,37 +30,29 @@ contract Device {
         task_manager = _task_manager;
     }
 
-    // TOGGLE STATUS
-    function toggle() public {
-
-        // IF CALLER IS THE DEVICE OWNER
-        require(msg.sender == owner, 'you are not the owner');
-        active = !active;
-    }
-
     // FETCH ASSIGNMENT BACKLOG
-    function fetch_assignments() public view returns(address[] memory) {
-        return assignments;
+    function fetch_backlog() public view returns(address[] memory) {
+        return backlog;
     }
 
     // ASSIGN TASK TO DEVICE
-    function assign(address _task) public {
+    function assign_task(address _task) public {
 
         // IF THE SENDER IS THE TASK MANAGER
         require(msg.sender == task_manager, 'permission denied');
 
         // PUSH ASSIGNMENT & EMIT EVENT
-        assignments.push(_task);
-        emit Update(assignments);
+        backlog.push(_task);
+        emit Update(backlog);
     }
 
-    // CLEAR ASSIGNMENT
-    function clear(uint index) public {
+    // CLEAR TASK FROM BACKLOG
+    function clear_task(uint index) public {
 
         // IF THE SENDER IS THE TASK MANAGER
         require(msg.sender == task_manager, 'permission denied');
 
         // REMOVE ELEMENT
-        delete assignments[index];
+        delete backlog[index];
     }
 }

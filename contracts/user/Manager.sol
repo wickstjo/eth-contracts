@@ -5,10 +5,10 @@ import { User } from './User.sol';
 
 contract UserManager {
 
-    // MAP OF USER INSTANCES -- [OWNER => LOCATION]
+    // MAP OF REGISTERED USERS -- [ETH USER => USER CONTRACT]
     mapping (address => User) public users;
 
-    // ITERABLE LIST OF USERS
+    // ITERABLE LIST OF ALL USERS
     address[] everyone;
 
     // INIT STATUS & TASK MANAGER ADDRESS
@@ -25,7 +25,7 @@ contract UserManager {
     }
 
     // FETCH ALL USERS
-    function fetch_all() public view returns(address[] memory) {
+    function fetch_everyone() public view returns(address[] memory) {
         return everyone;
     }
 
@@ -38,7 +38,7 @@ contract UserManager {
     }
 
     // ADD ENTRY TO HASHMAP
-    function add(string memory name) public {
+    function add_user(string memory name) public {
 
         // IF THE CONTRACT HAS BEEN INITIALIZED
         // IF THE USER DOES NOT EXIST
