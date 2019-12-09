@@ -4,7 +4,6 @@ pragma solidity ^0.5.0;
 import { Task } from './Task.sol';
 import { UserManager } from '../user/Manager.sol';
 import { DeviceManager } from '../device/Manager.sol';
-import { TokenManager } from '../Token.sol';
 
 contract TaskManager {
 
@@ -23,7 +22,6 @@ contract TaskManager {
     // REFERENCES
     UserManager user_manager;
     DeviceManager device_manager;
-    TokenManager token_manager;
 
     // CHECK IF TASK EXISTS
     function exists(address _task) public view returns(bool) {
@@ -59,10 +57,6 @@ contract TaskManager {
         // USER HAS ENOUGH TOKENS
         require(initialized, 'contracts have not been initialized');
         require(user_manager.exists(msg.sender), 'you are not a registered user');
-        require(token_manager.user_balance(msg.sender) >= 1, 'not enough tokens');
-
-        // REMOVE A TOKEN FROM SENDER
-        token_manager.consume_token(1, msg.sender);
 
         // INSTANTIATE NEW TASK
         Task task = (new Task).value(msg.value)(
@@ -176,8 +170,7 @@ contract TaskManager {
     // INITIALIZE
     function init(
         address _user_manager,
-        address _device_manager,
-        address _token_manager
+        address _device_manager
     ) public {
 
         // IF THE CONTRACT HAS NOT BEEN INITIALIZED
@@ -186,7 +179,6 @@ contract TaskManager {
         // SET REFERENCES
         user_manager = UserManager(_user_manager);
         device_manager = DeviceManager(_device_manager);
-        token_manager = TokenManager(_token_manager);
 
         // BLOCK FURTHER MODIFICATION
         initialized = true;

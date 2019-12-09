@@ -12,7 +12,6 @@ run([
    'TaskManager',
    'User',
    'UserManager',
-   'TokenManager'
 ]);
 
 // RUN THE TRANSFER
