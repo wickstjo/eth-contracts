@@ -1,7 +1,8 @@
 const contracts = [
    'UserManager',
    'DeviceManager',
-   'TaskManager'
+   'TaskManager',
+   'TokenManager'
 ]
 
 module.exports = (deployer) => {
