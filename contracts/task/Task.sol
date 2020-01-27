@@ -3,47 +3,32 @@ pragma solidity ^0.5.0;
 contract Task {
 
     // TASK CREATOR, DELIVERER & PERFORMING DEVICE
-    address payable public creator;
-    address payable public deliverer;
+    address public creator;
+    address public deliverer;
     string public device;
 
     // LOCKED STATUS
     bool public locked = false;
 
-    // SPECIFICATIONS
-    string public name;
+    // DETAILS
     uint public min_reputation;
-    string public public_user_key;
     uint public reward;
-
-    // CREATED TIMESTAMP
     uint256 public created;
 
     // TASK MANAGER REFERENCE
     address task_manager;
 
-    // RELEVANT INDEXES
-    uint public task_index;
-    uint public device_index;
-
     // WHEN CREATED
     constructor(
-        address payable _creator,
-        string memory _name,
+        address _creator,
         uint _reputation,
-        string memory _encryption,
-        uint _index
-    ) public payable {
+        uint _reward
+    ) public {
 
-        // SET STATIC TASK PARAMS
+        // TASK DETAILS
         creator = _creator;
-        name = _name;
         min_reputation = _reputation;
-        public_user_key = _encryption;
-        reward = msg.value;
-
-        // SET LISTED TASK INDEX & CREATED TIMESTAMP
-        task_index = _index;
+        reward = _reward;
         created = block.timestamp;
 
         // TASK MANAGER REFERENCE
@@ -55,7 +40,7 @@ contract Task {
         address payable _deliverer,
         string memory _device,
         uint _index
-    ) public payable {
+    ) public {
 
         // IF THE SENDER IS THE TASK MANAGER
         require(msg.sender == task_manager, 'permission denied');

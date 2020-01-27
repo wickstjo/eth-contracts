@@ -4,6 +4,7 @@ pragma solidity ^0.5.0;
 import { Task } from './Task.sol';
 import { UserManager } from '../user/Manager.sol';
 import { DeviceManager } from '../device/Manager.sol';
+import { TokenManager } from '../Token.sol';
 
 contract TaskManager {
 
@@ -16,12 +17,11 @@ contract TaskManager {
     // TIME LIMIT FOR TASK
     uint limit = 5000;
 
-    // INIT STATUS
-    bool initialized = false;
-
-    // REFERENCES
+    // REFERENCES & INIT STATUS
     UserManager user_manager;
     DeviceManager device_manager;
+    TokenManager token_manager;
+    bool initialized = false;
 
     // CHECK IF TASK EXISTS
     function exists(address _task) public view returns(bool) {
@@ -47,29 +47,31 @@ contract TaskManager {
 
     // ADD TASK
     function add_task(
-        string memory name,
         uint reputation,
-        string memory encryption
-    ) public payable {
+        uint reward
+    ) public {
 
         // IF CONTRACT HAS BEEN INITIALIZED
         // SENDER IS A REGISTERED USER
         // USER HAS ENOUGH TOKENS
         require(initialized, 'contracts have not been initialized');
         require(user_manager.exists(msg.sender), 'you are not a registered user');
+        require(token_manager.user_balance(msg.sender) >= reward, 'insufficient tokens');
 
         // INSTANTIATE NEW TASK
-        Task task = (new Task).value(msg.value)(
+        Task task = new Task(
             msg.sender,
-            name,
             reputation,
-            encryption,
+            reward,
             open_tasks.length
         );
 
         // ADD HASHMAP ENTRY & LIST IT
         tasks[address(task)] = task;
         open_tasks.push(task);
+
+        // CONSUME REWARD TOKENS
+        token_manager.consume_token(reward, msg.sender);
     }
 
     // ACCEPT TASK
@@ -170,7 +172,8 @@ contract TaskManager {
     // INITIALIZE
     function init(
         address _user_manager,
-        address _device_manager
+        address _device_manager,
+        address _token_manager
     ) public {
 
         // IF THE CONTRACT HAS NOT BEEN INITIALIZED
@@ -179,6 +182,7 @@ contract TaskManager {
         // SET REFERENCES
         user_manager = UserManager(_user_manager);
         device_manager = DeviceManager(_device_manager);
+        device_manager = TokenManager(_token_manager);
 
         // BLOCK FURTHER MODIFICATION
         initialized = true;
