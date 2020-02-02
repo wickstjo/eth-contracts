@@ -36,10 +36,9 @@ contract Task {
     }
 
     // ACCEPT TASK
-    function accept_task(
-        address payable _deliverer,
-        string memory _device,
-        uint _index
+    function accept(
+        address _deliverer,
+        string memory _device
     ) public {
 
         // IF THE SENDER IS THE TASK MANAGER
@@ -49,42 +48,16 @@ contract Task {
         deliverer = _deliverer;
         locked = true;
 
-        // SET PERFORMING DEVICE & LISTED INDEX
+        // SET PERFORMING DEVICE & INCREASE THE REWARD
         device = _device;
-        device_index = _index;
+        reward += reward / 2;
     }
 
-    // UNLOCK TASK
-    function unlock_task() public {
-
-        // IF THE SENDER IS THE SELLER
-        require(msg.sender == deliverer, 'permission denied');
-
-        // UNLOCK THE TASK & RESET SELLER
-        locked = false;
-        deliverer = 0x0000000000000000000000000000000000000000;
-
-        // TRANSFER 25% OF THE REWARD BACK
-        deliverer.transfer(reward / 4);
-    }
-
-    // COMPLETE THE TASK
-    function complete_task() public {
+    // SELF DESTRUCT
+    function destroy() public {
 
         // IF THE SENDER IS THE TASK MANAGER
         require(msg.sender == task_manager, 'permission denied');
-
-        // SELF DESTRUCT & TRANSFER FUNDS TO THE SELLER
-        selfdestruct(deliverer);
-    }
-
-    // RELEASE THE TASK
-    function release_task() public {
-
-        // IF THE SENDER IS THE TASK MANAGER
-        require(msg.sender == task_manager, 'permission denied');
-
-        // SELF DESTRUCT & TRANSFER FUNDS TO THE BUYER
-        selfdestruct(creator);
+        selfdestruct(address(uint160(address(this))));
     }
 }

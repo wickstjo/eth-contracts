@@ -12,37 +12,27 @@ contract TaskManager {
     mapping (address => Task) tasks;
 
     // ALL CURRENTLY OPEN TASKS
-    Task[] public open_tasks;
+    Task[] public open;
 
     // TIME LIMIT FOR TASK
     uint limit = 5000;
 
-    // REFERENCES & INIT STATUS
+    // REFERENCES
     UserManager user_manager;
     DeviceManager device_manager;
     TokenManager token_manager;
-    bool initialized = false;
 
-    // CHECK IF TASK EXISTS
-    function exists(address _task) public view returns(bool) {
-        if (address(tasks[_task]) != 0x0000000000000000000000000000000000000000) {
-            return true;
-        } else {
-            return false;
-        }
-    }
+    // INIT STATUS
+    bool initialized = false;
 
     // FETCH ALL OPEN TASKS
     function fetch_open() public view returns(Task[] memory) {
-        return open_tasks;
+        return open;
     }
 
-    // FETCH TASK
-    function fetch_task(address _task) public view returns(Task) {
-
-        // IF THE TASK EXISTS
-        require(exists(_task), 'task does not exist');
-        return tasks[_task];
+    // FETCH SPECIFIC TASK
+    function fetch_task(address task) public view returns(Task) {
+        return tasks[task];
     }
 
     // ADD TASK
@@ -56,22 +46,24 @@ contract TaskManager {
         // USER HAS ENOUGH TOKENS
         require(initialized, 'contracts have not been initialized');
         require(user_manager.exists(msg.sender), 'you are not a registered user');
-        require(token_manager.user_balance(msg.sender) >= reward, 'insufficient tokens');
+        require(token_manager.balance(msg.sender) >= reward + 1, 'insufficient tokens');
 
         // INSTANTIATE NEW TASK
         Task task = new Task(
             msg.sender,
             reputation,
-            reward,
-            open_tasks.length
+            reward
         );
 
-        // ADD HASHMAP ENTRY & LIST IT
+        // ADD IT TO BOTH LISTS
         tasks[address(task)] = task;
-        open_tasks.push(task);
+        open.push(task);
 
-        // CONSUME REWARD TOKENS
-        token_manager.consume_token(reward, msg.sender);
+        // CONSUME ONE TOKEN FOR CREATION
+        token_manager.consume(reward, msg.sender);
+
+        // TRANSFER THE REWARD TOKENS TO THE TASK MANAGER
+        token_manager.transfer(reward, msg.sender, address(this));
     }
 
     // ACCEPT TASK
@@ -85,60 +77,61 @@ contract TaskManager {
         require(exists(_task), 'task does not exist');
         require(device_manager.exists(_device), 'device does not exist');
 
-        // SHORTHAND
+        // SHORTHAND FOR TASK
         Task task = fetch_task(_task);
 
         // IF THE TASK IS NOT LOCKED
-        require(!task.locked(), 'task is locked');
-        require(msg.value >= task.reward() / 2, 'insufficient funds given');
-
         // IF THE USER IS REGISTERED
         // IF THE USER HAS ENOUGH REPUTATION
+        // IF THE SENDER HAS ENOUGH TOKENS
+        // IF THE SENDER IS THE DEVICE OWNER
+        require(!task.locked(), 'task is locked');
         require(user_manager.exists(msg.sender), 'you are not a registered user');
         require(user_manager.fetch_user(msg.sender).reputation() >= task.min_reputation(), 'not enough reputation');
-
-        // IF THE SENDER IS THE DEVICE OWNER
+        require(token_manager.balance(msg.sender) >= task.reward() / 2, 'insufficient funds given');
         require(device_manager.fetch_device(_device).owner() == msg.sender, 'you are not the device owner');
 
-        // CURRENT ASSIGNMENT BACKLOG LENGTH
-        uint length = device_manager.fetch_device(_device).fetch_backlog().length;
-
-        // ACCEPT THE TASK & FORWARD THE FUNDS
-        task.accept_task.value(msg.value)(msg.sender, _device, length);
-
-        // ASSIGN TASK TO THE DEVICE
+        // ACCEPT THE TASK & ASSIGN IT TO THE DEVICE
+        task.accept(msg.sender, _device);
         device_manager.fetch_device(_device).assign_task(_task);
+
+        // UNLIST TASK FROM OPEN & TRANSFER TOKENS TO TASK MANAGER
+        unlist(_task);
+        token_manager.transfer(task.reward() / 2, msg.sender, address(this));
     }
 
     // SUBMIT TASK RESULT
     function submit_result(
         address _task,
-        string memory _ipfs,
-        string memory _key
+        string memory _data
     ) public {
 
         // IF THE TASK EXISTS
         require(exists(_task), 'task does not exist');
 
-        // SHORTHAND
+        // SHORTHAND FOR TASK
         Task task = fetch_task(_task);
 
         // IF THE SENDER IS THE SELLER
         require(task.deliverer() == msg.sender, 'you are not the deliverer');
 
         // SEND THE RESULT TO THE BUYERS USER CONTRACT
-        user_manager.fetch_user(task.creator()).add_result(_key, _ipfs);
+        //user_manager.fetch_user(task.creator()).add_result(_key, _ipfs);
 
         // REWARD BOTH PARTIES WITH REPUTATION
         user_manager.fetch_user(task.creator()).reward(1);
         user_manager.fetch_user(msg.sender).reward(2);
 
-        // UNLIST FROM OPEN TASKS & DEVICE BACKLOG
-        delete open_tasks[task.task_index()];
-        device_manager.fetch_device(task.device()).clear_task(task.device_index());
+        // TRANSFER REWARD TOKENS TO THE SENDER
+        token_manager.transfer(
+            task.reward(),
+            address(this),
+            msg.sender
+        );
 
-        // SELF DESTRUCT TASK
-        task.complete_task();
+        // UNLIST FROM OPEN & DESTROY THE TASK
+        unlist(_task);
+        task.destroy();
     }
 
     // RELEASE THE TASK
@@ -156,16 +149,20 @@ contract TaskManager {
         // IF THE TASK IS LOCKED OR THE TIME LIMIT HAS BEEN EXCEEDED
         if (!task.locked() || block.timestamp > task.created() + limit) {
 
-            // UNLIST & DESTROY THE TASK
-            delete open_tasks[task.task_index()];
-            task.release_task();
+            // TRANSFER TOKENS FROM TASK MANAGER TO SENDER
+            token_manager.transfer(
+                task.reward(),
+                address(this),
+                msg.sender
+            );
 
-            // IF THE TIME LIMIT WAS EXCEEDE
-            if (block.timestamp > task.created() + limit) {
-
-                // UNLIST FROM DEVICE BACKLOG
-                device_manager.fetch_device(task.device()).clear_task(task.device_index());
+            // IF THE TASK IS LISTED, UNLIST IT
+            if (!task.locked()) {
+                unlist(_task);
             }
+
+            // DESTROY THE TASK
+            task.destroy();
         }
     }
 
@@ -182,9 +179,27 @@ contract TaskManager {
         // SET REFERENCES
         user_manager = UserManager(_user_manager);
         device_manager = DeviceManager(_device_manager);
-        device_manager = TokenManager(_token_manager);
+        token_manager = TokenManager(_token_manager);
 
         // BLOCK FURTHER MODIFICATION
         initialized = true;
+    }
+
+    // CHECK IF TASK EXISTS
+    function exists(address _task) public view returns(bool) {
+        if (address(tasks[_task]) != 0x0000000000000000000000000000000000000000) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // UNLIST TASK FROM OPEN
+    function unlist(address target) private {
+        for(uint index = 0; index < open.length; index++){
+            if (address(open[index]) == target) {
+                delete open[index];
+            }
+        }
     }
 }
