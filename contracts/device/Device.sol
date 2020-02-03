@@ -3,7 +3,7 @@ pragma solidity ^0.5.0;
 contract Device {
 
     // PROPERTIES
-    address payable public owner;
+    address public owner;
     string public name;
 
     // TASK BACKLOG
@@ -17,7 +17,7 @@ contract Device {
 
     // WHEN CREATED
     constructor(
-        address payable _owner,
+        address _owner,
         string memory _name,
         address _task_manager
     ) public {
@@ -47,12 +47,16 @@ contract Device {
     }
 
     // CLEAR TASK FROM BACKLOG
-    function clear_task(uint index) public {
+    function unlist_task(address target) public {
 
         // IF THE SENDER IS THE TASK MANAGER
         require(msg.sender == task_manager, 'permission denied');
 
-        // REMOVE ELEMENT
-        delete backlog[index];
+        // LOOP, FIND & DELETE TARGET
+        for(uint index = 0; index < backlog.length; index++) {
+            if (address(backlog[index]) == target) {
+                delete backlog[index];
+            }
+        }
     }
 }

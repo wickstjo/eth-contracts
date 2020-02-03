@@ -14,6 +14,7 @@ contract Task {
     uint public min_reputation;
     uint public reward;
     uint256 public created;
+    string public encryption_key;
 
     // TASK MANAGER REFERENCE
     address task_manager;
@@ -22,13 +23,15 @@ contract Task {
     constructor(
         address _creator,
         uint _reputation,
-        uint _reward
+        uint _reward,
+        string memory _encryption_key
     ) public {
 
         // TASK DETAILS
         creator = _creator;
         min_reputation = _reputation;
         reward = _reward;
+        encryption_key = _encryption_key;
         created = block.timestamp;
 
         // TASK MANAGER REFERENCE

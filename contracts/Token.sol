@@ -17,7 +17,7 @@ contract TokenManager {
         return tokens[user];
     }
 
-    // BUY TOKEN
+    // BUY TOKENS
     function buy(uint amount) public payable {
 
         // IF THE CONTRACT HAS BEEN INITIALIZED
@@ -29,7 +29,22 @@ contract TokenManager {
         tokens[msg.sender] += amount;
     }
 
-    // REMOVE TOKEN
+    // SELL TOKENS
+    function sell(uint amount) public {
+
+        // IF THE CONTRACT HAS BEEN INITIALIZED
+        // IF THE USER HAS ENOUGH TOKENS
+        require(initialized, 'contract has not been initialized');
+        require(balance(msg.sender) >= amount, 'not enough tokens');
+
+        // DECREASE TOKEN COUNT FOR USER
+        tokens[msg.sender] -= amount;
+
+        // TRANSFER ETH
+        msg.sender.transfer(amount * token_price);
+    }
+
+    // CONSUME TOKENS
     function consume(uint amount, address user) public {
 
         // IF THE CONTRACT HAS BEEN INITIALIZED

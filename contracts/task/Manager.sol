@@ -38,7 +38,8 @@ contract TaskManager {
     // ADD TASK
     function add_task(
         uint reputation,
-        uint reward
+        uint reward,
+        string memory encryption_key
     ) public {
 
         // IF CONTRACT HAS BEEN INITIALIZED
@@ -52,7 +53,8 @@ contract TaskManager {
         Task task = new Task(
             msg.sender,
             reputation,
-            reward
+            reward,
+            encryption_key
         );
 
         // ADD IT TO BOTH LISTS
@@ -103,6 +105,7 @@ contract TaskManager {
     // SUBMIT TASK RESULT
     function submit_result(
         address _task,
+        string memory _key,
         string memory _data
     ) public {
 
@@ -115,8 +118,8 @@ contract TaskManager {
         // IF THE SENDER IS THE SELLER
         require(task.deliverer() == msg.sender, 'you are not the deliverer');
 
-        // SEND THE RESULT TO THE BUYERS USER CONTRACT
-        //user_manager.fetch_user(task.creator()).add_result(_key, _ipfs);
+        // SEND THE RESULT TO THE TASK CREATORS USER CONTRACT
+        user_manager.fetch_user(task.creator()).add_result(_key, _data);
 
         // REWARD BOTH PARTIES WITH REPUTATION
         user_manager.fetch_user(task.creator()).reward(1);
@@ -129,8 +132,11 @@ contract TaskManager {
             msg.sender
         );
 
-        // UNLIST FROM OPEN & DESTROY THE TASK
+        // UNLIST FROM OPEN & DEVICE BACKLOG
         unlist(_task);
+        device_manager.fetch_device(task.device()).unlist_task(_task);
+
+        // FINALLY DESTROY THE TASK
         task.destroy();
     }
 
@@ -159,6 +165,10 @@ contract TaskManager {
             // IF THE TASK IS LISTED, UNLIST IT
             if (!task.locked()) {
                 unlist(_task);
+
+            // OTHERWISE, REMOVE FROM DEVICE BACKLOG
+            } else {
+                device_manager.fetch_device(task.device()).unlist_task(_task);
             }
 
             // DESTROY THE TASK
@@ -196,7 +206,7 @@ contract TaskManager {
 
     // UNLIST TASK FROM OPEN
     function unlist(address target) private {
-        for(uint index = 0; index < open.length; index++){
+        for(uint index = 0; index < open.length; index++) {
             if (address(open[index]) == target) {
                 delete open[index];
             }
