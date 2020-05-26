@@ -46,7 +46,6 @@ contract Device {
         emit Update(backlog);
     }
 
-    // CLEAR TASK FROM BACKLOG
     function unlist_task(address target) public {
 
         // IF THE SENDER IS THE TASK MANAGER
