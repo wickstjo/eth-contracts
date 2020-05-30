@@ -5,16 +5,14 @@ contract Task {
     // TASK CREATOR, DELIVERER & PERFORMING DEVICE
     address public creator;
     address public deliverer;
-    string public device;
-
-    // LOCKED STATUS
-    bool public locked = false;
+    address public device;
 
     // DETAILS
-    uint public min_reputation;
+    bool public locked = false;
+    uint public reputation;
     uint public reward;
-    uint256 public created;
     string public encryption_key;
+    uint256 public expires;
 
     // TASK MANAGER REFERENCE
     address task_manager;
@@ -24,22 +22,23 @@ contract Task {
         address _creator,
         uint _reputation,
         uint _reward,
-        string memory _encryption_key
+        string memory _encryption_key,
+        uint timelimit
     ) public {
 
         // TASK DETAILS
         creator = _creator;
-        min_reputation = _reputation;
+        reputation = _reputation;
         reward = _reward;
         encryption_key = _encryption_key;
-        created = block.timestamp;
+        expires = block.timestamp + timelimit;
 
         // TASK MANAGER REFERENCE
         task_manager = msg.sender;
     }
 
     // ACCEPT TASK
-    function accept(
+    function assign(
         address _deliverer,
         string memory _device
     ) public {

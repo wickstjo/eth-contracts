@@ -8,16 +8,16 @@ import { TokenManager } from '../Token.sol';
 
 contract TaskManager {
 
-    // MAP OF UNIQUE TASKS, [TASK ADDRESS => TASK CONTRACT]
+    // HASHMAP OF UNIQUE TASKS, [TASK ADDRESS => TASK CONTRACT]
     mapping (address => Task) tasks;
 
-    // ALL CURRENTLY OPEN TASKS
+    // ITERABLE LIST OF OPEN TASKS
     Task[] public open;
 
-    // TIME LIMIT FOR TASK
-    uint limit = 5000;
+    // TOKEN FEE FOR TASK CREATION
+    uint fee public;
 
-    // REFERENCES
+    // MANAGER CONTRACT REFERENCES
     UserManager user_manager;
     DeviceManager device_manager;
     TokenManager token_manager;
@@ -25,18 +25,13 @@ contract TaskManager {
     // INIT STATUS
     bool initialized = false;
 
-    // FETCH ALL OPEN TASKS
-    function fetch_open() public view returns(Task[] memory) {
-        return open;
-    }
-
-    // FETCH SPECIFIC TASK
-    function fetch_task(address task) public view returns(Task) {
+    // FETCH TASK BY ADDRESS
+    function fetch(address task) public view returns(Task) {
         return tasks[task];
     }
 
-    // ADD TASK
-    function add_task(
+    // ADD NEW TASK
+    function add(
         uint reputation,
         uint reward,
         string memory encryption_key
@@ -47,7 +42,7 @@ contract TaskManager {
         // USER HAS ENOUGH TOKENS
         require(initialized, 'contracts have not been initialized');
         require(user_manager.exists(msg.sender), 'you are not a registered user');
-        require(token_manager.balance(msg.sender) >= reward + 1, 'insufficient tokens');
+        require(token_manager.balance(msg.sender) >= reward + fee, 'insufficient tokens');
 
         // INSTANTIATE NEW TASK
         Task task = new Task(
@@ -57,22 +52,22 @@ contract TaskManager {
             encryption_key
         );
 
-        // ADD IT TO BOTH LISTS
+        // ADD IT TO BOTH CONTAINERS
         tasks[address(task)] = task;
         open.push(task);
 
-        // CONSUME ONE TOKEN FOR CREATION
-        token_manager.consume(reward, msg.sender);
+        // CONSUME TOKEN FEE FROM THE CREATOR
+        token_manager.consume(fee, msg.sender);
 
         // TRANSFER THE REWARD TOKENS TO THE TASK MANAGER
         token_manager.transfer(reward, msg.sender, address(this));
     }
 
     // ACCEPT TASK
-    function accept_task(
+    function accept(
         address _task,
         string memory _device
-    ) public payable {
+    ) public {
 
         // IF THE TASK EXISTS
         // IF THE DEVICE EXISTS
@@ -103,7 +98,7 @@ contract TaskManager {
     }
 
     // SUBMIT TASK RESULT
-    function submit_result(
+    function complete(
         address _task,
         string memory _key,
         string memory _data
@@ -141,7 +136,7 @@ contract TaskManager {
     }
 
     // RELEASE THE TASK
-    function release_task(address _task) public {
+    function release(address _task) public {
 
         // IF THE TASK EXISTS
         require(exists(_task), 'task does not exist');
@@ -178,6 +173,7 @@ contract TaskManager {
 
     // INITIALIZE
     function init(
+        int _fee,
         address _user_manager,
         address _device_manager,
         address _token_manager
@@ -185,6 +181,9 @@ contract TaskManager {
 
         // IF THE CONTRACT HAS NOT BEEN INITIALIZED
         require(!initialized, 'contract has already been initialized');
+
+        // SET TASK TOKEN FEE
+        fee = _fee;
 
         // SET REFERENCES
         user_manager = UserManager(_user_manager);
