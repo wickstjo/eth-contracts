@@ -1,6 +1,7 @@
-pragma solidity ^0.5.0;
+pragma solidity ^0.6.8;
+// SPDX-License-Identifier: MIT
 
-// IMPORT INTERFACES
+// IMPORT INTERFACE
 import { Task } from './Task.sol';
 import { UserManager } from '../user/Manager.sol';
 import { DeviceManager } from '../device/Manager.sol';
@@ -8,22 +9,20 @@ import { TokenManager } from '../Token.sol';
 
 contract TaskManager {
 
-    // HASHMAP OF UNIQUE TASKS, [TASK ADDRESS => TASK CONTRACT]
+    // MAP OF ALL TASKS, [ADDRESS => INTERFACE]
     mapping (address => Task) tasks;
 
     // ITERABLE LIST OF OPEN TASKS
     Task[] public open;
 
     // TOKEN FEE FOR TASK CREATION
-    uint fee public;
+    uint public fee;
 
-    // MANAGER CONTRACT REFERENCES
+    // INIT STATUS & MANAGER REFERENCES
+    bool initialized = false;
     UserManager user_manager;
     DeviceManager device_manager;
     TokenManager token_manager;
-
-    // INIT STATUS
-    bool initialized = false;
 
     // FETCH TASK BY ADDRESS
     function fetch(address task) public view returns(Task) {
@@ -34,14 +33,15 @@ contract TaskManager {
     function add(
         uint reputation,
         uint reward,
-        string memory encryption_key
+        string memory encryption_key,
+        uint timelimit
     ) public {
 
         // IF CONTRACT HAS BEEN INITIALIZED
         // SENDER IS A REGISTERED USER
         // USER HAS ENOUGH TOKENS
         require(initialized, 'contracts have not been initialized');
-        require(user_manager.exists(msg.sender), 'you are not a registered user');
+        require(user_manager.exists(msg.sender), 'you need to be registered');
         require(token_manager.balance(msg.sender) >= reward + fee, 'insufficient tokens');
 
         // INSTANTIATE NEW TASK
@@ -49,7 +49,8 @@ contract TaskManager {
             msg.sender,
             reputation,
             reward,
-            encryption_key
+            encryption_key,
+            timelimit
         );
 
         // ADD IT TO BOTH CONTAINERS
@@ -74,8 +75,8 @@ contract TaskManager {
         require(exists(_task), 'task does not exist');
         require(device_manager.exists(_device), 'device does not exist');
 
-        // SHORTHAND FOR TASK
-        Task task = fetch_task(_task);
+        // TASK & DEVICE SHORTHANDS
+        Task task = fetch(_task);
 
         // IF THE TASK IS NOT LOCKED
         // IF THE USER IS REGISTERED
@@ -83,21 +84,21 @@ contract TaskManager {
         // IF THE SENDER HAS ENOUGH TOKENS
         // IF THE SENDER IS THE DEVICE OWNER
         require(!task.locked(), 'task is locked');
-        require(user_manager.exists(msg.sender), 'you are not a registered user');
-        require(user_manager.fetch_user(msg.sender).reputation() >= task.min_reputation(), 'not enough reputation');
-        require(token_manager.balance(msg.sender) >= task.reward() / 2, 'insufficient funds given');
+        require(user_manager.exists(msg.sender), 'you need to be registered');
+        require(user_manager.fetch(msg.sender).reputation() >= task.reputation(), 'not enough reputation');
+        require(token_manager.balance(msg.sender) >= task.reward() / 2, 'insufficient tokens');
         require(device_manager.fetch_device(_device).owner() == msg.sender, 'you are not the device owner');
 
-        // ACCEPT THE TASK & ASSIGN IT TO THE DEVICE
-        task.accept(msg.sender, _device);
+        // ASSIGN TASK TO THE DELIVERER & DEVICE
+        task.assign(msg.sender, _device);
         device_manager.fetch_device(_device).assign_task(_task);
 
-        // UNLIST TASK FROM OPEN & TRANSFER TOKENS TO TASK MANAGER
-        unlist(_task);
+        // TRANSFER TOKENS TO TASK MANAGER & UNLIST TASK FROM OPEN
         token_manager.transfer(task.reward() / 2, msg.sender, address(this));
+        unlist(_task);
     }
 
-    // SUBMIT TASK RESULT
+    // COMPLETE TASK BY SUBMITTING RESULT
     function complete(
         address _task,
         string memory _key,
@@ -108,28 +109,27 @@ contract TaskManager {
         require(exists(_task), 'task does not exist');
 
         // SHORTHAND FOR TASK
-        Task task = fetch_task(_task);
+        Task task = fetch(_task);
 
-        // IF THE SENDER IS THE SELLER
+        // IF THE SENDER IS THE DELIVERER
         require(task.deliverer() == msg.sender, 'you are not the deliverer');
 
-        // SEND THE RESULT TO THE TASK CREATORS USER CONTRACT
-        user_manager.fetch_user(task.creator()).add_result(_key, _data);
+        // FORWARD THE RESULT TO THE TASK CREATORS USER CONTRACT
+        user_manager.fetch(task.creator()).add_result(_task, _key, _data);
 
         // REWARD BOTH PARTIES WITH REPUTATION
-        user_manager.fetch_user(task.creator()).reward(1);
-        user_manager.fetch_user(msg.sender).reward(2);
+        user_manager.fetch(task.creator()).award(1);
+        user_manager.fetch(msg.sender).award(2);
 
-        // TRANSFER REWARD TOKENS TO THE SENDER
+        // TRANSFER REWARD TOKENS FROM THE TASK MANAGER TO THE DELIVERER
         token_manager.transfer(
             task.reward(),
             address(this),
             msg.sender
         );
 
-        // UNLIST FROM OPEN & DEVICE BACKLOG
-        unlist(_task);
-        device_manager.fetch_device(task.device()).unlist_task(_task);
+        // CLEAR TASK FROM DEVICE BACKLOG
+        device_manager.fetch_device(task.device()).clear_task(_task);
 
         // FINALLY DESTROY THE TASK
         task.destroy();
@@ -142,15 +142,15 @@ contract TaskManager {
         require(exists(_task), 'task does not exist');
 
         // SHORTHAND
-        Task task = fetch_task(_task);
+        Task task = fetch(_task);
 
-        // IF THE SENDER IS THE BUYER
+        // IF THE SENDER IS THE CREATOR
         require(task.creator() == msg.sender, 'you are not the creator');
 
-        // IF THE TASK IS LOCKED OR THE TIME LIMIT HAS BEEN EXCEEDED
-        if (!task.locked() || block.timestamp > task.created() + limit) {
+        // IF THE TASK IS NOT LOCKED OR THE TIME LIMIT HAS BEEN EXCEEDED
+        if (!task.locked() || block.timestamp > task.expires()) {
 
-            // TRANSFER TOKENS FROM TASK MANAGER TO SENDER
+            // TRANSFER TOKENS FROM TASK MANAGER TO CREATOR
             token_manager.transfer(
                 task.reward(),
                 address(this),
@@ -161,9 +161,9 @@ contract TaskManager {
             if (!task.locked()) {
                 unlist(_task);
 
-            // OTHERWISE, REMOVE FROM DEVICE BACKLOG
+            // OTHERWISE, REMOVE TASK FROM DEVICE BACKLOG
             } else {
-                device_manager.fetch_device(task.device()).unlist_task(_task);
+                device_manager.fetch_device(task.device()).clear_task(_task);
             }
 
             // DESTROY THE TASK
@@ -171,9 +171,9 @@ contract TaskManager {
         }
     }
 
-    // INITIALIZE
+    // SET STATIC VARIABLES
     function init(
-        int _fee,
+        uint _fee,
         address _user_manager,
         address _device_manager,
         address _token_manager

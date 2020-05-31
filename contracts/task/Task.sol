@@ -1,13 +1,14 @@
-pragma solidity ^0.5.0;
+pragma solidity ^0.6.8;
+// SPDX-License-Identifier: MIT
 
 contract Task {
 
-    // TASK CREATOR, DELIVERER & PERFORMING DEVICE
+    // USER & DEVICE PARAMS
     address public creator;
     address public deliverer;
-    address public device;
+    string public device;
 
-    // DETAILS
+    // TASK DETAILS
     bool public locked = false;
     uint public reputation;
     uint public reward;
@@ -26,14 +27,12 @@ contract Task {
         uint timelimit
     ) public {
 
-        // TASK DETAILS
+        // SET STATIC PARAMS
         creator = _creator;
         reputation = _reputation;
         reward = _reward;
         encryption_key = _encryption_key;
         expires = block.timestamp + timelimit;
-
-        // TASK MANAGER REFERENCE
         task_manager = msg.sender;
     }
 
@@ -46,12 +45,12 @@ contract Task {
         // IF THE SENDER IS THE TASK MANAGER
         require(msg.sender == task_manager, 'permission denied');
 
-        // SET SELLER & LOCK THE TASK
+        // SET DELIVERING USER, PERFORMING DEVICE & LOCK THE TASK
         deliverer = _deliverer;
+        device = _device;
         locked = true;
 
-        // SET PERFORMING DEVICE & INCREASE THE REWARD
-        device = _device;
+        // ADD THE DELIVERERS TOKEN GUARANTEE TO THE REWARD POT
         reward += reward / 2;
     }
 

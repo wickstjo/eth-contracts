@@ -1,62 +1,52 @@
-pragma solidity ^0.5.0;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.6.8;
+// SPDX-License-Identifier: MIT
 
 contract User {
 
-    // NAME & CURRENT REPUTATION
+    // CURRENT REPUTATION
     uint public reputation = 1;
 
-    // MAP OF COMPLETED TASKS -- [TASK ADDRESS => TASK REPORT]
-    mapping (address => task_report) public results;
+    // ITERABLE LIST OF TASK RESULTS
+    result[] public results;
 
-    // ITERABLE ARRAY OF ALL COMPLETED TASK RESULTS
-    address[] public task_results;
-
-    // TASK REPORT OBJECT
-    struct task_report {
-        string key;         // DEVICE GENERATED PUBLIC KEY FOR DECRYPTION
-        string data;        // ENCRYPTED DATA
+    // TASK RESULT PARAMS
+    struct result {
+        address task;       // TASK ADDRESS
+        string key;         // PUBLIC ENCRYPTION KEY
+        string ipfs;        // IPFS QN-HASH
     }
 
     // TASK MANAGER REFERENCE
     address task_manager;
 
-    // WHEN CREATED, SET TASK MANAGER ADDRESS
+    // WHEN CREATED, SET TASK MANAGER REFERENCE
     constructor(address _task_manager) public {
         task_manager = _task_manager;
     }
 
-    // FETCH ALL TASK RESULTS
-    function fetch_all() public view returns(address[] memory) {
-        return task_results;
-    }
-
-    // FETCH SPECIFIC TASK RESULT
-    function fetch_result(address task) public view returns (task_report memory) {
-        return results[task];
-    }
-
     // ADD TASK RESULT
     function add_result(
+        address _task,
         string memory _key,
-        string memory _data
+        string memory _ipfs
     ) public {
 
         // IF SENDER IS THE TASK MANAGER
         require(msg.sender == task_manager, 'permission denied');
 
-        // PUSH ENTRY TO HASHMAP
-        results[msg.sender] = task_report({
+        // CONSTRUCT RESULT STRUCT
+        result memory temp = result({
+            task: _task,
             key: _key,
-            data: _data
+            ipfs: _ipfs
         });
 
-        // PUSH TO COMPLETED
-        task_results.push(msg.sender);
+        // PUSH TO RESULTS
+        results.push(temp);
     }
 
-    // REWARD REPUTATION
-    function reward(uint amount) public {
+    // INCREASE REPUTATION
+    function award(uint amount) public {
 
         // IF SENDER IS THE TASK MANAGER
         require(msg.sender == task_manager, 'permission denied');

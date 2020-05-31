@@ -1,44 +1,40 @@
-pragma solidity ^0.5.0;
+pragma solidity ^0.6.8;
+// SPDX-License-Identifier: MIT
 
 // IMPORT INTERFACE
 import { User } from './User.sol';
 
 contract UserManager {
 
-    // MAP OF REGISTERED USERS -- [ETH USER => USER CONTRACT]
+    // MAP OF ALL USERS, [ADDRESS => INTERFACE]
     mapping (address => User) public users;
 
-    // ITERABLE LIST OF ALL USERS
-    address[] everyone;
+    // ITERABLE LIST OF USERS
+    address[] public everyone;
 
-    // INIT STATUS & TASK MANAGER ADDRESS
+    // INIT STATUS & TASK MANAGER REFERENCE
     bool initialized = false;
     address task_manager;
 
-    // FETCH ALL USERS
-    function fetch_everyone() public view returns(address[] memory) {
-        return everyone;
-    }
-
-    // FETCH SPECIFIC USER
-    function fetch_user(address user) public view returns(User) {
+    // FETCH USER CONTRACT
+    function fetch(address user) public view returns(User) {
         return users[user];
     }
 
-    // ADD ENTRY TO HASHMAP
+    // ADD NEW USER
     function add() public {
 
         // IF THE CONTRACT HAS BEEN INITIALIZED
         // IF THE USER DOES NOT EXIST
         require(initialized, 'contract has not been initialized');
-        require(!exists(msg.sender), 'user already exists');
+        require(!exists(msg.sender), 'address is already registered');
 
-        // PUSH ENTRY TO MAP & ARRAY
+        // PUSH ENTRY TO BOTH CONTAINERS
         users[msg.sender] = new User(task_manager);
         everyone.push(msg.sender);
     }
 
-    // INITIALIZE CONTRACT
+    // SET STATIC VARIABLES
     function init(address _task_manager) public {
 
         // IF THE CONTRACT HAS NOT BEEN INITIALIZED

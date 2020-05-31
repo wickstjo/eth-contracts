@@ -1,4 +1,5 @@
-pragma solidity ^0.5.0;
+pragma solidity ^0.6.8;
+// SPDX-License-Identifier: MIT
 
 contract Device {
 
@@ -6,33 +7,26 @@ contract Device {
     address public owner;
     string public name;
 
-    // TASK BACKLOG
+    // ITERABLE TASK BACKLOG
     address[] public backlog;
+
+    // NEW ASSIGNMENT EVENT
+    event Assignment(address[] backlog);
 
     // TASK MANAGER REFERENCE
     address task_manager;
 
-    // NEW ASSIGNMENT EVENT
-    event Update(address[] backlog);
-
-    // WHEN CREATED
+    // SET STATIC VARIABLES
     constructor(
         address _owner,
         string memory _name,
         address _task_manager
     ) public {
 
-        // SET BASIC PROPERTIES
+        // SET PROPERTIES
         owner = _owner;
         name = _name;
-
-        // SET TASK MANAGER REFERENCE
         task_manager = _task_manager;
-    }
-
-    // FETCH ASSIGNMENT BACKLOG
-    function fetch_backlog() public view returns(address[] memory) {
-        return backlog;
     }
 
     // ASSIGN TASK TO DEVICE
@@ -41,12 +35,13 @@ contract Device {
         // IF THE SENDER IS THE TASK MANAGER
         require(msg.sender == task_manager, 'permission denied');
 
-        // PUSH ASSIGNMENT & EMIT EVENT
+        // ADD TASK TO BACKLOG & TRIGGER EVENT
         backlog.push(_task);
-        emit Update(backlog);
+        emit Assignment(backlog);
     }
 
-    function unlist_task(address target) public {
+    // CLEAR FINISHED TASK FROM BACKLOG
+    function clear_task(address target) public {
 
         // IF THE SENDER IS THE TASK MANAGER
         require(msg.sender == task_manager, 'permission denied');

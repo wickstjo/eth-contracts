@@ -1,26 +1,25 @@
-pragma solidity ^0.5.0;
+pragma solidity ^0.6.8;
 pragma experimental ABIEncoderV2;
+// SPDX-License-Identifier: MIT
 
-// IMPORT INTERFACES
+// IMPORT INTERFACE
 import { Device } from './Device.sol';
 import { UserManager } from '../user/Manager.sol';
 
 contract DeviceManager {
 
-    // UNIQUE DEVICES, [DEVICE_ID => DEVICE CONTRACT]
+    // MAP OF ALL DEVICES, [DEVICE ID => INTERFACE]
     mapping (string => Device) devices;
 
-    // USER DEVICE COLLECTION, [ETH USER => ARRAY OF DEVICE_ID]
+    // USER DEVICE COLLECTIONS, [ADDRESS => LIST OF DEVIVES]
     mapping (address => string[]) collections;
 
-    // INIT STATUS
+    // INIT STATUS & MANAGER REFERENCE
     bool initialized = false;
-
-    // REFERENCES
     UserManager user_manager;
     address task_manager;
 
-    // FETCH SPECIFIC DEVICE
+    // FETCH DEVICE CONTRACT
     function fetch_device(string memory id) public view returns(Device) {
         return devices[id];
     }
@@ -30,7 +29,7 @@ contract DeviceManager {
         return collections[user];
     }
 
-    // ADD DEVICE
+    // ADD NEW DEVICE
     function add(
         string memory id,
         string memory name
@@ -40,8 +39,8 @@ contract DeviceManager {
         // IF THE DEVICE DOES NOT EXIST
         // IF THE USER IS REGISTERED
         require(initialized, 'contract has not been initialized');
-        require(!exists(id), 'device already exist');
-        require(user_manager.exists(msg.sender), 'you are not a registered user');
+        require(!exists(id), 'identifier already exists');
+        require(user_manager.exists(msg.sender), 'you need to be a registered user');
 
         // INSTATIATE NEW DEVICE & ADD IT
         devices[id] = new Device(
@@ -54,7 +53,7 @@ contract DeviceManager {
         collections[msg.sender].push(id);
     }
 
-    // INITIALIZE
+    // SET STATIC VARIABLES
     function init(
         address _user_manager,
         address _task_manager
@@ -72,8 +71,8 @@ contract DeviceManager {
     }
 
     // CHECK IF DEVICE EXISTS
-    function exists(string memory _hash) public view returns(bool) {
-        if (address(devices[_hash]) != 0x0000000000000000000000000000000000000000) {
+    function exists(string memory id) public view returns(bool) {
+        if (address(devices[id]) != 0x0000000000000000000000000000000000000000) {
             return true;
         } else {
             return false;
