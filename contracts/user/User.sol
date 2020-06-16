@@ -7,14 +7,7 @@ contract User {
     uint public reputation = 1;
 
     // ITERABLE LIST OF TASK RESULTS
-    result[] public results;
-
-    // TASK RESULT PARAMS
-    struct result {
-        address task;       // TASK ADDRESS
-        string key;         // PUBLIC ENCRYPTION KEY
-        string ipfs;        // IPFS QN-HASH
-    }
+    address[] public results;
 
     // TASK MANAGER REFERENCE
     address task_manager;
@@ -25,24 +18,13 @@ contract User {
     }
 
     // ADD TASK RESULT
-    function add_result(
-        address _task,
-        string memory _key,
-        string memory _ipfs
-    ) public {
+    function add_result(address task) public {
 
         // IF SENDER IS THE TASK MANAGER
         require(msg.sender == task_manager, 'permission denied');
 
-        // CONSTRUCT RESULT STRUCT
-        result memory temp = result({
-            task: _task,
-            key: _key,
-            ipfs: _ipfs
-        });
-
         // PUSH TO RESULTS
-        results.push(temp);
+        results.push(task);
     }
 
     // INCREASE REPUTATION

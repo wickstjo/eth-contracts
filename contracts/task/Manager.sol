@@ -12,8 +12,17 @@ contract TaskManager {
     // MAP OF ALL TASKS, [ADDRESS => INTERFACE]
     mapping (address => Task) tasks;
 
+    // MAP OF ALL TASK RESULTS, [ADDRESS => STRUCT]
+    mapping (address => result) results;
+
     // ITERABLE LIST OF OPEN TASKS
     Task[] public open;
+
+    // TASK RESULT PARAMS
+    struct result {
+        string key;         // PUBLIC ENCRYPTION KEY
+        string ipfs;        // IPFS QN-HASH
+    }
 
     // TOKEN FEE FOR TASK CREATION
     uint public fee;
@@ -25,8 +34,13 @@ contract TaskManager {
     TokenManager token_manager;
 
     // FETCH TASK BY ADDRESS
-    function fetch(address task) public view returns(Task) {
+    function fetch_task(address task) public view returns(Task) {
         return tasks[task];
+    }
+
+    // FETCH TASK BY ADDRESS
+    function fetch_result(address task) public view returns(result) {
+        return results[task];
     }
 
     // ADD NEW TASK
@@ -114,8 +128,14 @@ contract TaskManager {
         // IF THE SENDER IS THE DELIVERER
         require(task.deliverer() == msg.sender, 'you are not the deliverer');
 
-        // FORWARD THE RESULT TO THE TASK CREATORS USER CONTRACT
-        user_manager.fetch(task.creator()).add_result(_task, _key, _data);
+        // CONSTRUCT & PUSH NEW RESULT
+        results[_task] = result({
+            key: _key,
+            ipfs: _ipfs
+        });
+
+        // ADD REFERENCE TO THE TASK CREATOR
+        user_manager.fetch(task.creator()).add_result(_task);
 
         // REWARD BOTH PARTIES WITH REPUTATION
         user_manager.fetch(task.creator()).award(1);
