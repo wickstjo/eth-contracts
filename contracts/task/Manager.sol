@@ -1,4 +1,5 @@
 pragma solidity ^0.6.8;
+pragma experimental ABIEncoderV2;
 // SPDX-License-Identifier: MIT
 
 // IMPORT INTERFACE
@@ -39,7 +40,7 @@ contract TaskManager {
     }
 
     // FETCH TASK BY ADDRESS
-    function fetch_result(address task) public view returns(result) {
+    function fetch_result(address task) public view returns(result memory) {
         return results[task];
     }
 
@@ -90,7 +91,7 @@ contract TaskManager {
         require(device_manager.exists(_device), 'device does not exist');
 
         // TASK & DEVICE SHORTHANDS
-        Task task = fetch(_task);
+        Task task = fetch_task(_task);
 
         // IF THE TASK IS NOT LOCKED
         // IF THE USER IS REGISTERED
@@ -116,14 +117,14 @@ contract TaskManager {
     function complete(
         address _task,
         string memory _key,
-        string memory _data
+        string memory _ipfs
     ) public {
 
         // IF THE TASK EXISTS
         require(exists(_task), 'task does not exist');
 
         // SHORTHAND FOR TASK
-        Task task = fetch(_task);
+        Task task = fetch_task(_task);
 
         // IF THE SENDER IS THE DELIVERER
         require(task.deliverer() == msg.sender, 'you are not the deliverer');
@@ -162,7 +163,7 @@ contract TaskManager {
         require(exists(_task), 'task does not exist');
 
         // SHORTHAND
-        Task task = fetch(_task);
+        Task task = fetch_task(_task);
 
         // IF THE SENDER IS THE CREATOR
         require(task.creator() == msg.sender, 'you are not the creator');
