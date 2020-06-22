@@ -169,7 +169,7 @@ contract TaskManager {
         require(task.creator() == msg.sender, 'you are not the creator');
 
         // IF THE TASK IS NOT LOCKED OR THE TIME LIMIT HAS BEEN EXCEEDED
-        if (!task.locked() || block.timestamp > task.expires()) {
+        if (!task.locked() || block.number > task.expires()) {
 
             // TRANSFER TOKENS FROM TASK MANAGER TO CREATOR
             token_manager.transfer(

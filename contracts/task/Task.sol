@@ -32,7 +32,7 @@ contract Task {
         reputation = _reputation;
         reward = _reward;
         encryption_key = _encryption_key;
-        expires = block.timestamp + timelimit;
+        expires = block.number + timelimit;
         task_manager = msg.sender;
     }
 
