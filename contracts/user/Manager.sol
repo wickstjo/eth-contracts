@@ -21,6 +21,11 @@ contract UserManager {
         return users[user];
     }
 
+    // FETCH USER CONTRACT
+    function fetch_everyone() public view returns(address[] memory) {
+        return everyone;
+    }
+
     // ADD NEW USER
     function add() public {
 

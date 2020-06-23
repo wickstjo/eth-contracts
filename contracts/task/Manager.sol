@@ -44,6 +44,11 @@ contract TaskManager {
         return results[task];
     }
 
+    // FETCH OPEN TASKS
+    function fetch_open() public view returns(Task[] memory) {
+        return open;
+    }
+
     // ADD NEW TASK
     function add(
         uint reputation,
