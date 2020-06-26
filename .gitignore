@@ -1,3 +1,4 @@
-/build
-/bin
+/build*
+/bin*
+/contracts/bin*
 /contracts/bin
