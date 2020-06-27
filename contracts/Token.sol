@@ -26,6 +26,10 @@ contract TokenManager {
         require(initialized, 'contract has not been initialized');
         require(msg.value == amount * price, 'insufficient funds provided');
 
+        // FIX FOR OVERFLOW
+        uint sum = tokens[msg.sender] + amount;
+        require(sum >= tokens[msg.sender], 'token overflow error');
+
         // INCREASE TOKEN COUNT FOR SENDER
         tokens[msg.sender] += amount;
     }
@@ -38,6 +42,10 @@ contract TokenManager {
         require(initialized, 'contract has not been initialized');
         require(msg.sender == task_manager, 'permission denied');
 
+        // FIX FOR OVERFLOW
+        uint sum = tokens[user] - amount;
+        require(sum <= tokens[user], 'token underflow error');
+
         // DECREASE TOKEN COUNT FOR USER
         tokens[user] -= amount;
     }
@@ -49,6 +57,13 @@ contract TokenManager {
         // IF THE SENDER HAS ENOUGH TOKENS TO TRANSFER
         require(initialized, 'contract has not been initialized');
         require(msg.sender == task_manager, 'permission denied');
+
+        // FIX FOR OVERFLOW & UNDERFLOW
+        uint sum_from = tokens[from] - amount;
+        uint sum_to = tokens[to] + amount;
+
+        require(sum_from <= tokens[from], 'token underflow error');
+        require(sum_to >= tokens[to], 'token overflow error');
 
         // REDUCE TOKENS FROM SENDER, THEN INCREASE THEM FOR USER
         tokens[from] -= amount;

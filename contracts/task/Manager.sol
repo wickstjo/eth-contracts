@@ -11,10 +11,10 @@ import { TokenManager } from '../Token.sol';
 contract TaskManager {
 
     // MAP OF ALL TASKS, [ADDRESS => INTERFACE]
-    mapping (address => Task) tasks;
+    mapping (address => Task) public tasks;
 
     // MAP OF ALL TASK RESULTS, [ADDRESS => STRUCT]
-    mapping (address => result) results;
+    mapping (address => result) public results;
 
     // ITERABLE LIST OF OPEN TASKS
     Task[] public open;
@@ -29,10 +29,10 @@ contract TaskManager {
     uint public fee;
 
     // INIT STATUS & MANAGER REFERENCES
-    bool initialized = false;
-    UserManager user_manager;
-    DeviceManager device_manager;
-    TokenManager token_manager;
+    bool public initialized = false;
+    UserManager public user_manager;
+    DeviceManager public device_manager;
+    TokenManager public token_manager;
 
     // FETCH TASK BY ADDRESS
     function fetch_task(address task) public view returns(Task) {
