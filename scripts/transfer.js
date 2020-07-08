@@ -40,6 +40,13 @@ function run(files) {
 
             if (err) console.log(err);
             console.log("REWROTE LATEST IN RPI HANDLER!");
+
+            // THEN OVERWRITE IOT-MANAGER FILE
+            fs.writeFile("../../python/iot-manager/latest.json", stringified, (err) => {
+
+               if (err) console.log(err);
+               console.log("REWROTE LATEST IN IOT-MANAGER!");
+            });
          });
       });
    });
